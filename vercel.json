@@ -1,8 +1,22 @@
- {
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "https://github.com/novatorem/novatorem"
-    }
-  ]
+{
+    "builds": [
+        {
+            "src": "api/orchestrator.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/spotify/(.*)",
+            "dest": "api/orchestrator.py"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "api/orchestrator.py"
+        },
+        {
+            "src": "/",
+            "dest": "api/orchestrator.py"
+        }
+    ]
 }
