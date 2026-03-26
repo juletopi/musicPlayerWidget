@@ -5,12 +5,12 @@
 <div align="center">
   <a href="https://www.python.org/">
     <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python-badge" style="max-width: 100%;">
+  </a
+  <a href="https://developer.spotify.com/">
+    <img src="https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white" alt="Spotify-badge" style="max-width: 100%;">
   </a>
   <a href="https://flask.palletsprojects.com/">
     <img src="https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask-badge" style="max-width: 100%;">
-  </a>
-  <a href="https://developer.spotify.com/">
-    <img src="https://img.shields.io/badge/Spotify_API-1DB954?style=for-the-badge&logo=spotify&logoColor=white" alt="Spotify-badge" style="max-width: 100%;">
   </a>
   <a href="https://vercel.com/">
     <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel-badge" style="max-width: 100%;">
@@ -93,50 +93,49 @@ SPOTIFY_REFRESH_TOKEN=seu_refresh_token
 
 > [!NOTE]
 > Consulte o [SetUp.pt.md](SetUp.pt.md) para o passo a passo completo de como obter o `refresh_token` da API do Spotify.
+> 
+> <table>
+>   <tr>
+>     <th colspan="2">Leia a documentação de setup em outros idiomas:</th>
+>   </tr>
+>   <tr>
+>     <th align="center">Idioma</th>
+>     <th align="center">Link</th>
+>   </tr>
+>   <tr>
+>     <td>
+>       <img align="center" src="https://cdn-icons-png.flaticon.com/512/197/197386.png" alt="Português" width="22"/>
+>       Português (Brasil)
+>     </td>
+>     <td align="center">
+>       <a href="SetUp.pt.md">SetUp.pt.md</a>
+>     </td>
+>   </tr>
+>   <tr>
+>     <td>
+>       <img align="center" src="https://cdn-icons-png.flaticon.com/512/197/197374.png" alt="English" width="22"/>
+>       English
+>     </td>
+>     <td align="center">
+>       <a href="SetUp.md">SetUp.md</a>
+>     </td>
+>   </tr>
+> </table>
 
 4. Inicie o servidor local
 ```bash
 python start.py
 ```
 
-O launcher cria o ambiente virtual, instala dependências e abre o preview em `http://127.0.0.1:5000/preview`.
-
-> [!TIP]
-> Use `python start.py --no-open` para iniciar sem abrir o navegador automaticamente.
-
-#### Leia a documentação de setup em outros idiomas:
-
-<table>
-  <tr>
-    <th align="center">Idioma</th>
-    <th align="center">Link</th>
-  </tr>
-  <tr>
-    <td>
-      <img align="center" src="https://cdn-icons-png.flaticon.com/512/197/197386.png" alt="Português" width="22"/>
-      Português (Brasil)
-    </td>
-    <td align="center">
-      <a href="SetUp.pt.md">SetUp.pt.md</a>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <img align="center" src="https://cdn-icons-png.flaticon.com/512/197/197374.png" alt="English" width="22"/>
-      English
-    </td>
-    <td align="center">
-      <a href="SetUp.md">SetUp.md</a>
-    </td>
-  </tr>
-</table>
 <div align="left">
   <h6><a href="#music-player-widget"> Voltar para o início ↺</a></h6>
 </div>
 
 ## Licença
 
-Este projeto é baseado no do [novatorem/novatorem](https://github.com/novatorem/novatorem) e está licenciado sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto é baseado no do [novatorem/novatorem](https://github.com/novatorem/novatorem) e é não-licenciado e de uso gratuito para quaisquer fins. 
+
+Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 <div align="left">
   <h6><a href="#music-player-widget"> Voltar para o início ↺</a></h6>
