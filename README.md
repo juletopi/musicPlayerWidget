@@ -92,11 +92,11 @@ SPOTIFY_REFRESH_TOKEN=seu_refresh_token
 ```
 
 > [!NOTE]
-> Consulte o [SetUp.pt.md](SetUp.pt.md) para o passo a passo completo de como obter o `refresh_token` da API do Spotify.
+> Consulte o [SetUp.md](SetUp.pt.md) para o passo a passo completo de como obter o `refresh_token` da API do Spotify e configuração do projeto no Vercel.
 > 
 > <table>
 >   <tr>
->     <th colspan="2">Leia a documentação de setup em outros idiomas:</th>
+>     <th colspan="2">Documentação de setup em outros idiomas:</th>
 >   </tr>
 >   <tr>
 >     <th align="center">Idioma</th>
@@ -126,6 +126,10 @@ SPOTIFY_REFRESH_TOKEN=seu_refresh_token
 ```bash
 python start.py
 ```
+
+<div align="center">
+  <img src="preview-print.png" alt="Preview da página de widgets" style="max-width:100%; height:auto;" />
+</div>
 
 <div align="left">
   <h6><a href="#music-player-widget"> Voltar para o início ↺</a></h6>
