@@ -294,12 +294,6 @@ The equalizer bars automatically sync to the music's characteristics:
 
 This creates a unique visual experience for each track - calm songs have gentler animations, while energetic tracks have more dynamic, punchy visuals.
 
-## Requests
-
-Customization requests can be submitted as an issue, like https://github.com/novatorem/novatorem/issues/2
-
-If you want to share your own customization options, open a PR if it's done or open an issue if you want it implemented by someone else.
-
 ## Debugging
 
 If you have issues setting up, try following this [guide](https://youtu.be/n6d4KHSKqGk?t=615).

@@ -1,72 +1,631 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pt-BR" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Novatorem – Now Playing Widget Preview</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #1a1a1a;
-      color: #e0e0e0;
-      padding: 2rem;
-      margin: 0;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Music Player | Widget Preview</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg:         #1a1a1a;
+            --bg-card:    #252525;
+            --bg-snippet: #1e1e1e;
+            --text:       #e0e0e0;
+            --text-muted: #888;
+            --border:     #444;
+            --code-bg:    #333;
+            --link:       #58a6ff;
+            --copy-bg:    #2e2e2e;
+            --copy-hover: #3e3e3e;
+            --copy-ok:    #4a4a4a;
+        }
 
-    h1 {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
-    }
+        [data-theme="light"] {
+            --bg:         #f0ece2;
+            --bg-card:    #e2ddd3;
+            --bg-snippet: #d8d3c9;
+            --text:       #1a1a1a;
+            --text-muted: #555;
+            --border:     #aaa;
+            --code-bg:    #d0ccc2;
+            --link:       #0055cc;
+            --copy-bg:    #c8c3b9;
+            --copy-hover: #b8b3a9;
+            --copy-ok:    #a8a39a;
+        }
 
-    p {
-      color: #888;
-      margin: 0 0 1rem;
-    }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            border-radius: 0 !important;
+        }
 
-    .widget-wrap {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      background: #252525;
-      border-radius: 8px;
-    }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, sans-serif;
+            padding: 5rem 2rem 2rem;
+            transition: background 0.2s, color 0.2s;
+        }
 
-    .widget-wrap img {
-      display: block;
-      border-radius: 5px;
-    }
+        a { color: var(--link); }
 
-    a {
-      color: #58a6ff;
-    }
-  </style>
+        code {
+            background: var(--code-bg);
+            padding: 0.1rem 0.35rem;
+            font-size: 0.9rem;
+        }
+
+        .pixel {
+            font-family: "VT323", monospace;
+            letter-spacing: 0.04em;
+        }
+
+        .topbar {
+            position: fixed;
+            top: 1.5rem;
+            right: 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0;
+            z-index: 100;
+        }
+
+        #back-to-top-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1a1a1a;
+            border: 4px solid #cccccc;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.6);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.15s, box-shadow 0.15s;
+        }
+
+        #back-to-top-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #back-to-top-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.6);
+        }
+
+        #back-to-top-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke: #cccccc;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: square;
+            stroke-linejoin: miter;
+        }
+
+        [data-theme="light"] #back-to-top-btn {
+            background: #e0e0e0;
+            border-color: #333;
+        }
+
+        [data-theme="light"] #back-to-top-btn svg {
+            stroke: #333;
+        }
+
+        #lang-toggle-btn {
+            background: #1a1a1a;
+            border: 4px solid #cccccc;
+            height: 50px;
+            width: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.6);
+            position: relative;
+            transition: all 0.2s;
+            margin-right: 8px;
+            padding: 0 8px;
+        }
+
+        #lang-toggle-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.6);
+        }
+
+        #lang-toggle-btn .lang-opt {
+            font-family: "VT323", monospace;
+            font-size: 1.1rem;
+            line-height: 1;
+            color: #666;
+            letter-spacing: 0.04em;
+            transition: color 0.2s;
+            z-index: 1;
+            user-select: none;
+        }
+
+        #lang-toggle-btn .lang-opt.active { color: #cccccc; }
+
+        #lang-toggle-btn .lang-thumb {
+            position: absolute;
+            top: 3px;
+            left: 4px;
+            width: 50px;
+            height: 36px;
+            background: #444;
+            border: 2px solid #888;
+            transition: left 0.2s;
+        }
+
+        #lang-toggle-btn.is-en .lang-thumb { left: calc(100% - 54px); }
+
+        [data-theme="light"] #lang-toggle-btn {
+            background: #e0e0e0;
+            border-color: #333;
+        }
+
+        [data-theme="light"] #lang-toggle-btn .lang-opt       { color: #aaa; }
+        [data-theme="light"] #lang-toggle-btn .lang-opt.active { color: #1a1a1a; }
+        [data-theme="light"] #lang-toggle-btn .lang-thumb {
+            background: #bbb;
+            border-color: #555;
+        }
+
+        #theme-toggle-btn {
+            background: #1a1a1a;
+            border: 4px solid #cccccc;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.6);
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        #theme-toggle-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.6);
+        }
+
+        #theme-toggle-btn svg {
+            width: 28px;
+            height: 28px;
+            position: absolute;
+            transition: opacity 0.25s, transform 0.25s;
+            stroke: #cccccc;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: square;
+            stroke-linejoin: miter;
+        }
+
+        #theme-toggle-btn .sun-icon  { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+        #theme-toggle-btn .moon-icon { opacity: 1; transform: rotate(0deg) scale(1); }
+
+        [data-theme="light"] #theme-toggle-btn             { background: #e0e0e0; border-color: #333; }
+        [data-theme="light"] #theme-toggle-btn svg         { stroke: #333; }
+        [data-theme="light"] #theme-toggle-btn .sun-icon   { opacity: 1; transform: rotate(0deg) scale(1); }
+        [data-theme="light"] #theme-toggle-btn .moon-icon  { opacity: 0; transform: rotate(90deg) scale(0.5); }
+
+        h1 {
+            font-size: 2.2rem;
+            margin: 0 0 0.4rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin: 0 0 2rem;
+        }
+
+        .section-label {
+            font-size: 1.6rem;
+            margin: 0 0 0.75rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .widget-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            align-items: flex-start;
+        }
+
+        .widget-preview {
+            flex: 0 0 auto;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+        }
+
+        .widget-preview img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border);
+        }
+
+        .widget-desc {
+            margin: 0.6rem 0 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .widget-snippets {
+            flex: 1 1 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .snippet-block {
+            background: var(--bg-snippet);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .snippet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--copy-bg);
+        }
+
+        .snippet-lang-label {
+            font-family: "VT323", monospace;
+            font-size: 1rem;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+        }
+
+        .copy-btn {
+            font-family: "VT323", monospace;
+            font-size: 0.95rem;
+            letter-spacing: 0.04em;
+            background: var(--copy-bg);
+            color: var(--text-muted);
+            border: 2px solid var(--border);
+            padding: 0.15rem 0.55rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.4);
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: var(--copy-hover);
+            color: var(--text);
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px rgba(0,0,0,0.4);
+        }
+
+        .copy-btn.copied {
+            background: var(--copy-ok);
+            color: var(--text);
+        }
+
+        .snippet-code {
+            margin: 0;
+            padding: 0.75rem;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            color: var(--text);
+            white-space: pre;
+            overflow-x: auto;
+            tab-size: 4;
+        }
+
+        @media (max-width: 860px) {
+            .widget-row { flex-direction: column; }
+            .widget-preview { width: 100%; }
+        }
+    </style>
 </head>
-
 <body>
-  <h1>Novatorem – Now Playing Widget Preview</h1>
-  <p>Quick start: <code>python start.py</code> or <code>npm start</code> &mdash; see <a href="/">raw SVG endpoint</a>
-  </p>
+    <button id="back-to-top-btn" aria-label="Back to top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 5.5L5 13h4v6h6v-6h4L12 5.5z"/>
+        </svg>
+    </button>
 
-  <div class="widget-wrap">
-    <strong>Default</strong>
-    <a href="/redirect"><img src="/" alt="Now Playing (default)" width="540" height="135" /></a>
-  </div>
+    <div class="topbar">
+        <button id="lang-toggle-btn" aria-label="Toggle language">
+            <span class="lang-thumb"></span>
+            <span class="lang-opt active" id="opt-pt">PT</span>
+            <span class="lang-opt" id="opt-en">ENG</span>
+        </button>
+        <button id="theme-toggle-btn" aria-label="Toggle theme">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="5"/>
+                <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+        </button>
+    </div>
 
-  <div class="widget-wrap">
-    <strong>Blur dark + white border</strong>
-    <a href="/redirect"><img src="/?background_type=blur_dark&border_color=ffffff" alt="Now Playing" width="540"
-        height="135" /></a>
-  </div>
+    <h1 class="pixel" id="pageTitle">PLAYER DE MUSICA — PREVIEW DO WIDGET</h1>
+    <p class="subtitle" id="pageSubtitle">
+        Inicie com &nbsp;<code>python start.py</code>&nbsp; e veja o endpoint bruto em <a href="/">/</a>.
+    </p>
 
-  <div class="widget-wrap">
-    <strong>Custom</strong>
-    <a href="/redirect"><img src="/?background_type=blur_light&border_color=000000" alt="Custom" /></a>
-  </div>
-  <div class="widget-wrap">
-    <strong>Compact Mode</strong>
-    <a href="/redirect?compact=true"><img src="/?compact=true&background_type=blur_dark&border_color=ffffff"
-        alt="Compact Mode" width="400" height="80" /></a>
-  </div>
+    <section>
+        <h2 class="pixel section-label" data-i18n="defaultTitle">[ PADRAO ]</h2>
+        <div class="widget-row">
+            <div class="widget-preview">
+                <a href="/redirect">
+                    <img src="/" alt="Now Playing default" width="540" height="135" />
+                </a>
+                <p class="widget-desc" data-i18n="defaultDesc">Widget padrao sem parametros extras.</p>
+            </div>
+            <div class="widget-snippets">
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">HTML</span>
+                        <button class="copy-btn" data-target="snip-default-html" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-default-html" class="snippet-code">&lt;a href="https://open.spotify.com/user/your_user_code"
+   target="_blank" rel="noopener noreferrer"&gt;
+    &lt;img
+        src="https://your_player.vercel.app/api/spotify/"
+        alt="Now Playing"
+    /&gt;
+&lt;/a&gt;</pre>
+                </div>
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">MARKDOWN</span>
+                        <button class="copy-btn" data-target="snip-default-md" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-default-md" class="snippet-code">[![Now Playing](https://your_player.vercel.app/api/spotify/)](https://open.spotify.com/user/your_user_code)</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="pixel section-label" data-i18n="blurDarkTitle">[ BLUR DARK + BORDA BRANCA ]</h2>
+        <div class="widget-row">
+            <div class="widget-preview">
+                <a href="/redirect">
+                    <img src="/?background_type=blur_dark&border_color=ffffff" alt="Blur dark" width="540" height="135" />
+                </a>
+                <p class="widget-desc" data-i18n="blurDarkDesc">Capa desfocada com overlay escuro e borda branca.</p>
+            </div>
+            <div class="widget-snippets">
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">HTML</span>
+                        <button class="copy-btn" data-target="snip-blurdark-html" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-blurdark-html" class="snippet-code">&lt;a href="https://open.spotify.com/user/your_user_code"
+   target="_blank" rel="noopener noreferrer"&gt;
+    &lt;img
+        src="https://your_player.vercel.app/api/spotify/?background_type=blur_dark&amp;border_color=ffffff"
+        alt="Now Playing"
+    /&gt;
+&lt;/a&gt;</pre>
+                </div>
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">MARKDOWN</span>
+                        <button class="copy-btn" data-target="snip-blurdark-md" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-blurdark-md" class="snippet-code">[![Now Playing](https://your_player.vercel.app/api/spotify/?background_type=blur_dark&border_color=ffffff)](https://open.spotify.com/user/your_user_code)</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="pixel section-label" data-i18n="blurLightTitle">[ BLUR LIGHT + BORDA PRETA ]</h2>
+        <div class="widget-row">
+            <div class="widget-preview">
+                <a href="/redirect">
+                    <img src="/?background_type=blur_light&border_color=000000" alt="Blur light" width="540" height="135" />
+                </a>
+                <p class="widget-desc" data-i18n="blurLightDesc">Capa desfocada com overlay claro e borda preta.</p>
+            </div>
+            <div class="widget-snippets">
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">HTML</span>
+                        <button class="copy-btn" data-target="snip-blurlight-html" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-blurlight-html" class="snippet-code">&lt;a href="https://open.spotify.com/user/your_user_code"
+   target="_blank" rel="noopener noreferrer"&gt;
+    &lt;img
+        src="https://your_player.vercel.app/api/spotify/?background_type=blur_light&amp;border_color=000000"
+        alt="Now Playing"
+    /&gt;
+&lt;/a&gt;</pre>
+                </div>
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">MARKDOWN</span>
+                        <button class="copy-btn" data-target="snip-blurlight-md" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-blurlight-md" class="snippet-code">[![Now Playing](https://your_player.vercel.app/api/spotify/?background_type=blur_light&border_color=000000)](https://open.spotify.com/user/your_user_code)</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="pixel section-label" data-i18n="compactTitle">[ MODO COMPACTO ]</h2>
+        <div class="widget-row">
+            <div class="widget-preview">
+                <a href="/redirect?compact=true">
+                    <img src="/?compact=true&background_type=blur_dark&border_color=ffffff" alt="Compact mode" width="400" height="80" />
+                </a>
+                <p class="widget-desc" data-i18n="compactDesc">Widget em formato reduzido (400x80).</p>
+            </div>
+            <div class="widget-snippets">
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">HTML</span>
+                        <button class="copy-btn" data-target="snip-compact-html" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-compact-html" class="snippet-code">&lt;a href="https://open.spotify.com/user/your_user_code"
+   target="_blank" rel="noopener noreferrer"&gt;
+    &lt;img
+        src="https://your_player.vercel.app/api/spotify/?compact=true&amp;background_type=blur_dark&amp;border_color=ffffff"
+        alt="Now Playing"
+        width="400" height="80"
+    /&gt;
+&lt;/a&gt;</pre>
+                </div>
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">MARKDOWN</span>
+                        <button class="copy-btn" data-target="snip-compact-md" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-compact-md" class="snippet-code">[![Now Playing](https://your_player.vercel.app/api/spotify/?compact=true&background_type=blur_dark&border_color=ffffff)](https://open.spotify.com/user/your_user_code)</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        (function () {
+            var i18n = {
+                "pt-BR": {
+                    pageTitle:     "PLAYER DE MUSICA — PREVIEW DO WIDGET",
+                    pageSubtitle:  "Inicie com &nbsp;<code>python start.py</code>&nbsp; e veja o endpoint bruto em <a href=\"/\">/</a>.",
+                    defaultTitle:  "[ PADRAO ]",
+                    defaultDesc:   "Widget padrao sem parametros extras.",
+                    blurDarkTitle: "[ BLUR DARK + BORDA BRANCA ]",
+                    blurDarkDesc:  "Capa desfocada com overlay escuro e borda branca.",
+                    blurLightTitle:"[ BLUR LIGHT + BORDA PRETA ]",
+                    blurLightDesc: "Capa desfocada com overlay claro e borda preta.",
+                    compactTitle:  "[ MODO COMPACTO ]",
+                    compactDesc:   "Widget em formato reduzido (400x80).",
+                    copyBtn:       "[ COPIAR ]",
+                    copyDone:      "[ COPIADO! ]"
+                },
+                en: {
+                    pageTitle:     "MUSIC PLAYER — WIDGET PREVIEW",
+                    pageSubtitle:  "Start with &nbsp;<code>python start.py</code>&nbsp; and inspect the raw endpoint at <a href=\"/\">/</a>.",
+                    defaultTitle:  "[ DEFAULT ]",
+                    defaultDesc:   "Default widget with no extra parameters.",
+                    blurDarkTitle: "[ BLUR DARK + WHITE BORDER ]",
+                    blurDarkDesc:  "Blurred album art with dark overlay and white border.",
+                    blurLightTitle:"[ BLUR LIGHT + BLACK BORDER ]",
+                    blurLightDesc: "Blurred album art with light overlay and black border.",
+                    compactTitle:  "[ COMPACT MODE ]",
+                    compactDesc:   "Reduced-size widget (400x80).",
+                    copyBtn:       "[ COPY ]",
+                    copyDone:      "[ COPIED! ]"
+                }
+            };
+
+            var lang = localStorage.getItem("lang") || "pt-BR";
+
+            function applyLang(l) {
+                var t = i18n[l];
+                document.getElementById("pageTitle").textContent = t.pageTitle;
+                document.getElementById("pageSubtitle").innerHTML = t.pageSubtitle;
+                document.querySelectorAll("[data-i18n]").forEach(function (el) {
+                    var key = el.getAttribute("data-i18n");
+                    if (t[key] !== undefined) el.innerHTML = t[key];
+                });
+                document.querySelectorAll(".copy-btn:not(.copied)").forEach(function (btn) {
+                    btn.textContent = t.copyBtn;
+                });
+                document.documentElement.lang = l;
+                localStorage.setItem("lang", l);
+                lang = l;
+            }
+
+            var langBtn = document.getElementById("lang-toggle-btn");
+            var optPt   = document.getElementById("opt-pt");
+            var optEn   = document.getElementById("opt-en");
+
+            function syncLangBtn(l) {
+                if (l === "en") {
+                    langBtn.classList.add("is-en");
+                    optPt.classList.remove("active");
+                    optEn.classList.add("active");
+                } else {
+                    langBtn.classList.remove("is-en");
+                    optPt.classList.add("active");
+                    optEn.classList.remove("active");
+                }
+            }
+
+            syncLangBtn(lang);
+            applyLang(lang);
+
+            langBtn.addEventListener("click", function () {
+                var next = lang === "pt-BR" ? "en" : "pt-BR";
+                syncLangBtn(next);
+                applyLang(next);
+            });
+
+            var html    = document.documentElement;
+            var themeBtn = document.getElementById("theme-toggle-btn");
+            var savedTheme = localStorage.getItem("theme") || "dark";
+            html.setAttribute("data-theme", savedTheme);
+
+            themeBtn.addEventListener("click", function () {
+                var next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+                html.setAttribute("data-theme", next);
+                localStorage.setItem("theme", next);
+            });
+
+            var backBtn = document.getElementById("back-to-top-btn");
+
+            window.addEventListener("scroll", function () {
+                if (window.scrollY > 200) {
+                    backBtn.classList.add("visible");
+                } else {
+                    backBtn.classList.remove("visible");
+                }
+            });
+
+            backBtn.addEventListener("click", function () {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+            document.querySelectorAll(".copy-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var targetId = btn.getAttribute("data-target");
+                    var pre = document.getElementById(targetId);
+                    if (!pre) return;
+
+                    var tmp = document.createElement("textarea");
+                    tmp.value = pre.textContent;
+                    document.body.appendChild(tmp);
+                    tmp.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(tmp);
+
+                    var t = i18n[lang];
+                    btn.textContent = t.copyDone;
+                    btn.classList.add("copied");
+                    setTimeout(function () {
+                        btn.textContent = t.copyBtn;
+                        btn.classList.remove("copied");
+                    }, 2000);
+                });
+            });
+        })();
+    </script>
 </body>
-
 </html>
