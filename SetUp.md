@@ -159,11 +159,11 @@ You can now use the following in your readme:
 
 **For Spotify users:**
 
-`[![Spotify](https://USER_NAME.vercel.app/api/orchestrator)](https://open.spotify.com/user/USER_NAME)`
+`[![Spotify](https://music-player-widget-ten.vercel.app/api/spotify/)](https://open.spotify.com/user/USER_NAME)`
 
 **For Last.fm users:**
 
-`[![Last.fm](https://USER_NAME.vercel.app/api/orchestrator)](https://www.last.fm/user/USER_NAME)`
+`[![Last.fm](https://music-player-widget-ten.vercel.app/api/spotify/)](https://www.last.fm/user/USER_NAME)`
 
 ## Customization
 
@@ -188,32 +188,32 @@ You can customize the appearance of your widget using URL query parameters:
 
 Basic dark theme:
 ```
-https://USER_NAME.vercel.app/api/orchestrator
+https://music-player-widget-ten.vercel.app/api/spotify/
 ```
 
 Custom colors:
 ```
-https://USER_NAME.vercel.app/api/orchestrator?background_color=0d1117&border_color=30363d
+https://music-player-widget-ten.vercel.app/api/spotify/?background_color=0d1117&border_color=30363d
 ```
 
 **Blurred album art background (dark):**
 ```
-https://USER_NAME.vercel.app/api/orchestrator?background_type=blur_dark
+https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark
 ```
 
 **Blurred album art background (light):**
 ```
-https://USER_NAME.vercel.app/api/orchestrator?background_type=blur_light
+https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_light
 ```
 
 With status text:
 ```
-https://USER_NAME.vercel.app/api/orchestrator?show_status=true
+https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true
 ```
 
 Full customization with blur:
 ```
-https://USER_NAME.vercel.app/api/orchestrator?background_type=blur_dark&border_color=333333&show_status=true
+https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark&border_color=333333&show_status=true
 ```
 
 ### Theme Templates
@@ -275,7 +275,7 @@ border: 2px solid var(--border-color);
 
 A `/health` endpoint is available for monitoring:
 ```
-https://USER_NAME.vercel.app/api/orchestrator/health
+https://music-player-widget-ten.vercel.app/api/spotify//health
 ```
 
 ### Audio-Reactive Animations

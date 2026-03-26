@@ -31,12 +31,12 @@
 
 | Variante | Widget |
 |----------|--------|
-| **Padrão** | [![Default](https://spotify-api-readme-fork.vercel.app/api/spotify/)](https://spotify-api-readme-fork.vercel.app/api/spotify/) |
-| **Dark custom** | [![Dark Custom](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_color=0e1118&border_color=22252c)](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_color=0e1118&border_color=22252c) |
-| **Blur dark** | [![Blur Dark](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_type=blur_dark&border_color=ffffff)](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_type=blur_dark&border_color=ffffff) |
-| **Blur light** | [![Blur Light](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_type=blur_light&border_color=000000)](https://spotify-api-readme-fork.vercel.app/api/spotify/?background_type=blur_light&border_color=000000) |
-| **Compacto** | [![Compact](https://spotify-api-readme-fork.vercel.app/api/spotify/?compact=true&background_type=blur_dark&border_color=ffffff)](https://spotify-api-readme-fork.vercel.app/api/spotify/?compact=true&background_type=blur_dark&border_color=ffffff) |
-| **Com status** | [![Status On](https://spotify-api-readme-fork.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)](https://spotify-api-readme-fork.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c) |
+| **Padrão** | [![Default](https://music-player-widget-ten.vercel.app/api/spotify/)](https://music-player-widget-ten.vercel.app/api/spotify/) |
+| **Dark custom** | [![Dark Custom](https://music-player-widget-ten.vercel.app/api/spotify/?background_color=0e1118&border_color=22252c)](https://music-player-widget-ten.vercel.app/api/spotify/?background_color=0e1118&border_color=22252c) |
+| **Blur dark** | [![Blur Dark](https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark&border_color=ffffff)](https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark&border_color=ffffff) |
+| **Blur light** | [![Blur Light](https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_light&border_color=000000)](https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_light&border_color=000000) |
+| **Compacto** | [![Compact](https://music-player-widget-ten.vercel.app/api/spotify/?compact=true&background_type=blur_dark&border_color=ffffff)](https://music-player-widget-ten.vercel.app/api/spotify/?compact=true&background_type=blur_dark&border_color=ffffff) |
+| **Com status** | [![Status On](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c) |
 
 <div align="left">
   <h6><a href="#music-player-widget"> Voltar para o início ↺</a></h6>
