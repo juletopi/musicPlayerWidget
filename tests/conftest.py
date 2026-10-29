@@ -47,11 +47,13 @@ def client():
 
 @pytest.fixture
 def use_spotify(monkeypatch):
-    def configure() -> None:
+    def configure(token_date: str = "") -> None:
         monkeypatch.setattr(
             spotify,
             "spotify_config",
-            SpotifyConfig(client_id="id", client_secret="secret", refresh_token="tok"),
+            SpotifyConfig(
+                client_id="id", client_secret="secret", refresh_token="tok", refresh_token_date=token_date
+            ),
         )
 
     return configure

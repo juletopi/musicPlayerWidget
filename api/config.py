@@ -29,6 +29,8 @@ class SpotifyConfig:
     client_id: str = field(default_factory=lambda: os.getenv("SPOTIFY_CLIENT_ID", ""))
     client_secret: str = field(default_factory=lambda: os.getenv("SPOTIFY_SECRET_ID", ""))
     refresh_token: str = field(default_factory=lambda: os.getenv("SPOTIFY_REFRESH_TOKEN", ""))
+    # Date (YYYY-MM-DD) of the authorization that produced the refresh token
+    refresh_token_date: str = field(default_factory=lambda: os.getenv("SPOTIFY_REFRESH_TOKEN_DATE", ""))
 
     # API URLs
     token_url: str = "https://accounts.spotify.com/api/token"
