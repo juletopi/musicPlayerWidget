@@ -7,3 +7,12 @@
 # Pycache
 __pycache__
 .venv
+
+# Pytest
+.pytest_cache/
+
+# Claude Code (local agent config, specs and plans)
+.claude/
+CLAUDE.md
+.superpowers/
+docs/superpowers/
