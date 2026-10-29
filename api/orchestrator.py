@@ -36,7 +36,30 @@ from .exceptions import (
 )
 
 
+class PrefixStripMiddleware:
+    """
+    Strip deployment path prefixes before Flask routing.
+
+    Vercel forwards the full path (e.g. /api/spotify/health), so without this
+    every named route falls through to the catch-all widget handler.
+    """
+
+    def __init__(self, wsgi_app: Any, prefixes: Tuple[str, ...]) -> None:
+        self.wsgi_app = wsgi_app
+        # Longest first so /api/spotify wins over /api
+        self.prefixes = sorted(prefixes, key=len, reverse=True)
+
+    def __call__(self, environ: dict, start_response: Any) -> Any:
+        path = environ.get("PATH_INFO", "")
+        for prefix in self.prefixes:
+            if path == prefix or path.startswith(prefix + "/"):
+                environ["PATH_INFO"] = path[len(prefix):] or "/"
+                break
+        return self.wsgi_app(environ, start_response)
+
+
 app = Flask(__name__)
+app.wsgi_app = PrefixStripMiddleware(app.wsgi_app, ("/api/spotify", "/api"))
 
 
 # ============================================================================
