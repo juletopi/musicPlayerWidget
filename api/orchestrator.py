@@ -32,6 +32,8 @@ from .exceptions import (
     MusicWidgetError,
     ServiceNotConfiguredError,
 )
+from .error_card import render_error_svg
+from .i18n import ERROR_CODES, normalize_lang
 
 
 class PrefixStripMiddleware:
@@ -585,26 +587,35 @@ def get_active_service() -> Tuple[str, Any]:
 # ============================================================================
 
 
-def make_error_svg(message: str, status_code: int = 500) -> Response:
+def make_error_svg(
+    code: str,
+    lang: str,
+    background_color: str,
+    border_color: str,
+    background_type: str,
+    is_compact: bool,
+) -> Response:
     """
-    Generate an error SVG response.
-    
+    Generate the error card response.
+
+    Always HTTP 200: GitHub's image proxy shows a broken image for any non-2xx
+    response, so the real status lives in the X-Widget-Error header and in
+    /health/auth.
+
     Args:
-        message: Error message to display
-        status_code: HTTP status code
-        
+        code: Error code (see i18n.ERROR_CODES)
+        lang: Normalized language
+        background_color: Hex color for background (without #)
+        border_color: Hex color for border (without #)
+        background_type: Type of background ("color", "blur_dark", "blur_light")
+        is_compact: Whether to use compact mode layout
+
     Returns:
         Flask Response with error SVG
     """
-    # Simple error SVG
-    error_svg = f"""<svg width="{svg_config.width}" height="{svg_config.height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#1a1a1a" rx="5"/>
-        <text x="50%" y="50%" fill="#ff6b6b" font-family="sans-serif" font-size="14" text-anchor="middle" dominant-baseline="middle">
-            {escape_xml(message)}
-        </text>
-    </svg>"""
-
-    resp = Response(error_svg, mimetype="image/svg+xml", status=status_code)
+    svg = render_error_svg(code, lang, background_color, border_color, background_type, is_compact)
+    resp = Response(svg, mimetype="image/svg+xml", status=200)
+    resp.headers["X-Widget-Error"] = code
     resp.headers["Cache-Control"] = "no-cache"
     return resp
 
@@ -614,42 +625,77 @@ def make_error_svg(message: str, status_code: int = 500) -> Response:
 # ============================================================================
 
 
+def _widget_params() -> dict[str, Any]:
+    """Read and validate the query parameters shared by the widget routes."""
+    raw_background = request.args.get("background_color", "")
+    raw_border = request.args.get("border_color", "")
+    raw_bg_type = request.args.get("background_type", "")
+
+    return {
+        "background_color": validate_hex_color(raw_background, svg_config.default_background),
+        "border_color": validate_hex_color(raw_border, svg_config.default_border),
+        "background_type": validate_background_type(raw_bg_type, svg_config.default_background_type),
+        "show_status": request.args.get("show_status", "").lower() in ("true", "1", "yes"),
+        "is_compact": request.args.get("compact", "").lower() in ("true", "1", "yes"),
+        "lang": normalize_lang(request.args.get("lang")),
+    }
+
+
+def _error_response(code: str, params: dict[str, Any]) -> Response:
+    """Render the error card using the request's widget parameters."""
+    return make_error_svg(
+        code,
+        params["lang"],
+        params["background_color"],
+        params["border_color"],
+        params["background_type"],
+        params["is_compact"],
+    )
+
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 @app.route("/with_parameters")
 def catch_all(path: str) -> Response:
     """Main route handler - serves the SVG widget."""
-    # Validate and sanitize color parameters
-    raw_background = request.args.get("background_color", "")
-    raw_border = request.args.get("border_color", "")
-    raw_bg_type = request.args.get("background_type", "")
-
-    background_color = validate_hex_color(raw_background, svg_config.default_background)
-    border_color = validate_hex_color(raw_border, svg_config.default_border)
-    background_type = validate_background_type(raw_bg_type, svg_config.default_background_type)
-
-    # Optional parameters
-    show_status = request.args.get("show_status", "").lower() in ("true", "1", "yes")
-    is_compact = request.args.get("compact", "").lower() in ("true", "1", "yes")
+    params = _widget_params()
 
     try:
         service_name, service = get_active_service()
     except MusicWidgetError as e:
-        return make_error_svg(e.message, e.status_code)
+        return _error_response(e.code, params)
 
     try:
         track_data = service.get_now_playing()
     except MusicWidgetError as e:
-        return make_error_svg(e.message, e.status_code)
+        print(f"[widget] {e.code}: {e.message}")
+        return _error_response(e.code, params)
     except Exception as e:
-        return make_error_svg(f"Error: {str(e)}", 500)
+        print(f"[widget] unexpected error: {e!r}")
+        return _error_response("unknown", params)
 
-    svg = make_svg(track_data, background_color, border_color, background_type, show_status, is_compact)
+    svg = make_svg(
+        track_data,
+        params["background_color"],
+        params["border_color"],
+        params["background_type"],
+        params["show_status"],
+        params["is_compact"],
+    )
 
     resp = Response(svg, mimetype="image/svg+xml")
     resp.headers["Cache-Control"] = "s-maxage=1"
 
     return resp
+
+
+@app.route("/preview/error")
+def preview_error() -> Response:
+    """Render the error card for ?code= without calling any service."""
+    code = request.args.get("code", "")
+    if code not in ERROR_CODES:
+        code = "unknown"
+    return _error_response(code, _widget_params())
 
 
 @app.route("/preview")
