@@ -10,6 +10,8 @@ import colorsys
 import json
 import os
 import random
+import time
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Optional, Tuple
 
@@ -34,6 +36,7 @@ from .exceptions import (
 )
 from .error_card import render_error_svg
 from .i18n import ERROR_CODES, normalize_lang
+from .token_expiry import expiry_fields
 
 
 class PrefixStripMiddleware:
@@ -739,6 +742,54 @@ def redirect_to_song() -> Response:
 def health_check() -> Response:
     """Health check endpoint for monitoring."""
     return Response("OK", status=200, mimetype="text/plain")
+
+
+# Auth checks hit Spotify, so a public endpoint must not refresh on every call.
+# Per serverless instance: (monotonic timestamp, body, status)
+AUTH_CACHE_TTL = 300
+_auth_cache: Optional[Tuple[float, dict, int]] = None
+
+
+def _check_auth_status() -> Tuple[dict, int]:
+    """Run a real auth check for the active service; never exposes secrets."""
+    from . import spotify
+
+    try:
+        service_name, service = get_active_service()
+    except MusicWidgetError as e:
+        return {"service": None, "status": "error", "error": e.code}, 503
+
+    body: dict[str, Any] = {"service": service_name}
+    if service_name == "spotify":
+        today = datetime.now(timezone.utc).date()
+        expiry = expiry_fields(spotify.spotify_config.refresh_token_date, today)
+    else:
+        expiry = {"token_date": None, "expires_on": None, "days_remaining": None}
+
+    try:
+        service.check_auth()
+    except MusicWidgetError as e:
+        return {**body, "status": "error", "error": e.code, **expiry}, 503
+
+    return {**body, "status": "ok", **expiry}, 200
+
+
+@app.route("/health/auth")
+def health_auth() -> Response:
+    """Auth health for external monitoring: 200 when auth works, 503 otherwise."""
+    global _auth_cache
+
+    now = time.monotonic()
+    if _auth_cache is not None and now - _auth_cache[0] < AUTH_CACHE_TTL:
+        body, status = _auth_cache[1], _auth_cache[2]
+    else:
+        body, status = _check_auth_status()
+        if body.get("error") != "not_configured":
+            _auth_cache = (now, body, status)
+
+    resp = Response(json.dumps(body), status=status, mimetype="application/json")
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 # ============================================================================

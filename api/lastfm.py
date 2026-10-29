@@ -215,6 +215,16 @@ def _api_get(params: dict[str, Any]) -> dict[str, Any]:
         raise APIError("Last.fm", 0, str(e), code="service_unavailable") from e
 
 
+def check_auth() -> None:
+    """
+    Verify the API key and username with a minimal request.
+
+    Raises:
+        APIError: If the request fails
+    """
+    get_recent_tracks(limit=1)
+
+
 def get_recent_tracks(limit: int = 10) -> dict[str, Any]:
     """
     Fetch recent tracks from Last.fm for the configured user.

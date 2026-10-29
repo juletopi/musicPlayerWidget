@@ -193,6 +193,16 @@ def is_configured() -> bool:
     return spotify_config.is_configured()
 
 
+def check_auth() -> None:
+    """
+    Verify the credentials with a real token refresh.
+
+    Raises:
+        AuthenticationError: If the refresh fails (see classify_token_error)
+    """
+    _token_manager.get_token(force_refresh=True)
+
+
 def _api_get(url: str, retry_on_auth_error: bool = True) -> dict[str, Any]:
     """
     Make an authenticated GET request to the Spotify API.
