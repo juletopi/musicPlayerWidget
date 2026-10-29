@@ -17,6 +17,10 @@
             "description": "Spotify application client secret (required for Spotify)",
             "required": false
         },
+        "SPOTIFY_REFRESH_TOKEN_DATE": {
+            "description": "Date (YYYY-MM-DD) the refresh token was generated; enables the expiry countdown in /health/auth",
+            "required": false
+        },
         "LAST_FM_API_KEY": {
             "description": "Last.fm API key (required for Last.fm)",
             "required": false

@@ -41,6 +41,29 @@ Pressione **Ctrl+C** para parar. Use `--no-open` para nao abrir o navegador auto
 
 ## Refresh Token
 
+### Script (recomendado)
+
+So precisa de Python 3.9+, sem pacotes extras:
+
+```bash
+python scripts/get_token.py --lang pt-BR
+```
+
+O script:
+
+1. Pede o `Client ID` e o `Client Secret` (ou le `SPOTIFY_CLIENT_ID` / `SPOTIFY_SECRET_ID` do ambiente)
+2. Abre a pagina de autorizacao do Spotify no navegador
+3. Pede para colar a **URL completa** para onde voce foi redirecionado (`https://example.com/callback?code=...`). A pagina em si nao carrega; isso e esperado
+4. Imprime as duas linhas para configurar na Vercel:
+
+```text
+SPOTIFY_REFRESH_TOKEN=AQ...
+SPOTIFY_REFRESH_TOKEN_DATE=2026-10-29
+```
+
+> [!IMPORTANT]
+> **Codigo de autorizacao ≠ refresh token.** O valor `code=` da URL do callback so pode ser usado uma vez e expira em minutos; ele serve apenas para ser trocado pelo refresh token. Nunca coloque o codigo em `SPOTIFY_REFRESH_TOKEN`.
+
 ### Metodo manual
 
 1. Acesse a URL abaixo substituindo `{SPOTIFY_CLIENT_ID}`:
@@ -63,29 +86,23 @@ https://example.com/callback?code={CODE}
 curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Basic {BASE64}" -d "grant_type=authorization_code&redirect_uri=https://example.com/callback&code={CODE}" https://accounts.spotify.com/api/token
 ```
 
-5. Salve o campo `refresh_token` da resposta JSON.
+> No Windows PowerShell, digite `curl.exe` em vez de `curl`: o `curl` puro e um alias de `Invoke-WebRequest` e falha com essas opcoes.
 
-### Metodo PowerShell
+5. Salve o campo `refresh_token` da resposta JSON (nao o `access_token`, que dura uma hora) e a data de hoje como `SPOTIFY_REFRESH_TOKEN_DATE`.
 
-<details>
+## Expiracao do token
 
-<summary>Script PowerShell para obter o refresh token</summary>
+Desde 20 de julho de 2026, os refresh tokens do Spotify **expiram 6 meses depois que voce autoriza o app**, e usa-los nao renova esse prazo ([anuncio](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration)). Depois disso, o widget mostra o card *Token do Spotify expirou* (veja [Cards de erro](#cards-de-erro)).
 
-```powershell
-$ClientId = Read-Host "Client ID"
-$ClientSecret = Read-Host "Client Secret"
+Alem disso, apps em Development Mode so funcionam enquanto o dono do app tiver **Spotify Premium ativo**.
 
-Start-Process "https://accounts.spotify.com/authorize?client_id=$ClientId&response_type=code&scope=user-read-currently-playing,user-read-recently-played&redirect_uri=https://example.com/callback"
+Para renovar:
 
-$Code = Read-Host "Please insert everything after 'https://example.com/callback?code='"
+1. Rode `python scripts/get_token.py --lang pt-BR`
+2. Na Vercel, atualize `SPOTIFY_REFRESH_TOKEN` e `SPOTIFY_REFRESH_TOKEN_DATE` com os valores impressos
+3. Faca o redeploy do projeto (Deployments → ⋯ → Redeploy) para os novos valores valerem
 
-$ClientBytes = [System.Text.Encoding]::UTF8.GetBytes("${ClientId}:${ClientSecret}")
-$EncodedClientInfo =[Convert]::ToBase64String($ClientBytes)
-
-curl -X POST -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Basic $EncodedClientInfo" -d "grant_type=authorization_code&redirect_uri=https://example.com/callback&code=$Code" https://accounts.spotify.com/api/token
-```
-
-</details>
+`SPOTIFY_REFRESH_TOKEN_DATE` e opcional, mas com ela o `/health/auth` informa quantos dias faltam (veja [Endpoints de Health Check](#endpoints-de-health-check)).
 
 ---
 
@@ -133,6 +150,7 @@ Variavel:
 - `SPOTIFY_REFRESH_TOKEN`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_SECRET_ID`
+- `SPOTIFY_REFRESH_TOKEN_DATE` (opcional, habilita a contagem de dias no `/health/auth`)
 
 **Para Last.fm:**
 - `LAST_FM_API_KEY`
@@ -186,6 +204,7 @@ docker compose down
 | `border_color` | Cor da borda (hex sem `#`) | `181414` | `ffffff` |
 | `background_type` | Estilo de fundo: `color`, `blur_dark`, `blur_light` | `color` | `blur_dark` |
 | `show_status` | Mostra "Vibing to:" ou "Recently played:" | `false` | `true` |
+| `lang` | Idioma dos [cards de erro](#cards-de-erro): `en` ou `pt-BR` | `en` | `pt-BR` |
 
 #### Tipos de fundo
 
@@ -284,12 +303,36 @@ border: 2px solid var(--border-color);
 }
 ```
 
-### Health Check
+### Endpoints de Health Check
 
-Endpoint:
+**`/health`**: verifica se o servidor esta no ar. Responde `OK` (usado pelo healthcheck do Docker).
 
 ```text
-https://music-player-widget-ten.vercel.app/api/spotify//health
+https://music-player-widget-ten.vercel.app/api/spotify/health
+```
+
+**`/health/auth`**: faz uma autenticacao real com o servico configurado e responde em JSON. Status `200` quando a auth funciona, `503` quando falha ou quando nada esta configurado. O resultado fica em cache por 5 minutos.
+
+```text
+https://music-player-widget-ten.vercel.app/api/spotify/health/auth
+```
+
+```json
+{"service": "spotify", "status": "ok", "token_date": "2026-10-29", "expires_on": "2027-04-29", "days_remaining": 182}
+```
+
+| Campo | Significado |
+|-------|-------------|
+| `service` | `spotify`, `lastfm` ou `null` |
+| `status` | `ok` ou `error` |
+| `error` | So em caso de falha: o mesmo codigo do [card de erro](#erros-comuns) |
+| `token_date` / `expires_on` / `days_remaining` | Calculados a partir de `SPOTIFY_REFRESH_TOKEN_DATE`; `null` quando ela nao esta definida (e sempre no Last.fm) |
+| `warning` | `invalid_token_date` quando `SPOTIFY_REFRESH_TOKEN_DATE` nao esta no formato `AAAA-MM-DD` |
+
+Para ser avisado antes do token expirar, aponte qualquer job agendado para ele (cron, GitHub Actions no repo do seu perfil, um monitor de uptime). Por exemplo, este comando falha quando a auth esta quebrada ou faltam menos de 30 dias:
+
+```bash
+curl -fsS https://<seu-deploy>/api/spotify/health/auth | jq -e '.days_remaining == null or .days_remaining > 30'
 ```
 
 ### Animacoes reativas ao audio
@@ -305,6 +348,47 @@ https://music-player-widget-ten.vercel.app/api/spotify//health
 
 ---
 
+## Cards de erro
+
+Quando algo esta errado na configuracao, o widget nao vira uma imagem quebrada no seu README. Ele mostra um card no proprio visual do widget dizendo o que aconteceu e o que fazer, no idioma definido por `?lang=` (`en` ou `pt-BR`), com as suas cores e tamanho:
+
+![Token do Spotify expirou](https://music-player-widget-ten.vercel.app/api/spotify/preview/error?code=token_expired&lang=pt-BR)
+
+```text
+https://music-player-widget-ten.vercel.app/api/spotify/preview/error?code=token_expired&lang=pt-BR
+```
+
+![Widget não configurado](https://music-player-widget-ten.vercel.app/api/spotify/preview/error?code=not_configured&lang=pt-BR&compact=true)
+
+```text
+https://music-player-widget-ten.vercel.app/api/spotify/preview/error?code=not_configured&lang=pt-BR&compact=true
+```
+
+`/preview/error?code=<codigo>` desenha qualquer card da tabela abaixo no seu proprio deploy, sem chamar o Spotify, para voce ver como cada um fica com os seus parametros.
+
+Para diagnosticar a configuracao:
+
+1. Abra a URL do widget no navegador e leia o card
+2. Ou confira o header `X-Widget-Error` da resposta: `curl -sI "https://<seu-deploy>/api/spotify/" | grep -i x-widget-error`
+3. Abra o `/health/auth` (veja [Endpoints de Health Check](#endpoints-de-health-check))
+4. Procure o codigo abaixo
+
+### Erros comuns
+
+| Card (`X-Widget-Error`) | Causa | Solucao |
+|-------------------------|-------|---------|
+| Widget não configurado (`not_configured`) | Nenhuma variavel `SPOTIFY_*` ou `LAST_FM_*` | Configure as variaveis na Vercel e faca o redeploy |
+| Token do Spotify expirou (`token_expired`) | Refresh token com mais de 6 meses, ou revogado | [Renove](#expiracao-do-token) com `scripts/get_token.py` |
+| Credenciais do Spotify inválidas (`invalid_client`) | `SPOTIFY_CLIENT_ID` ou `SPOTIFY_SECRET_ID` errados | Copie de novo do dashboard do Spotify (cuidado com espacos sobrando) |
+| Falha na autenticação do Spotify (`auth_failed`) | O Spotify recusou o pedido de token por outro motivo | Veja a linha `[spotify] token refresh failed` nos logs da Vercel |
+| Acesso negado pelo Spotify (`premium_required`) | App em Development Mode cujo dono esta sem Premium ativo, ou sua conta fora da lista de usuarios do app | Renove o Premium na conta dona do app; adicione sua conta em **User Management** no dashboard |
+| Serviço de música indisponível (`service_unavailable`) | Spotify ou Last.fm fora do ar ou inacessivel | Nada a corrigir do seu lado; volta sozinho |
+| Erro no serviço de música (`api_error`) | Resposta inesperada da API | Veja os logs da Vercel |
+| Nenhuma música para mostrar agora (`no_tracks`) | Esta tocando um podcast ou outro conteudo que nao e musica, e nao ha musica recente | Toque uma musica; o widget atualiza no proximo carregamento |
+| Algo deu errado (`unknown`) | Erro inesperado | Veja os logs da Vercel; abra uma issue se continuar |
+
+---
+
 ## Debug
 
 Se tiver problema no setup, veja:
@@ -314,3 +398,11 @@ Se ainda falhar, verifique logs de funcoes da Vercel:
 `https://vercel.com/{nome}/{projeto}/functions`
 
 Na maioria dos casos, o erro e variavel de ambiente incorreta.
+
+Os detalhes dos erros tambem aparecem nesses logs: uma falha ao renovar o token registra `[spotify] token refresh failed: HTTP <status> <resposta do Spotify>`.
+
+**Rodando localmente atras de um proxy corporativo?** Se as requisicoes falharem com erro de certificado SSL, aponte o Python para o pacote de certificados da empresa:
+
+```bash
+export REQUESTS_CA_BUNDLE=/caminho/para/ca-da-empresa.pem   # PowerShell: $env:REQUESTS_CA_BUNDLE = "C:\caminho\para\ca-da-empresa.pem"
+```
