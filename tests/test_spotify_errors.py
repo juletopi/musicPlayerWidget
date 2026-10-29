@@ -78,3 +78,12 @@ def test_no_tls_bypass():
         source = path.read_text(encoding="utf-8")
         assert "verify=False" not in source, path.name
         assert "disable_warnings" not in source, path.name
+
+
+def test_audio_features_forbidden_is_silent(monkeypatch, use_spotify, capsys):
+    # audio-features is blocked for new apps; it must not spam "forbidden" logs
+    use_spotify()
+    monkeypatch.setattr(spotify.requests, "post", lambda *a, **k: FakeResponse(200, {"access_token": "a"}))
+    monkeypatch.setattr(spotify.requests, "get", lambda *a, **k: FakeResponse(403, text="Forbidden"))
+    assert spotify.get_audio_features("track") is None
+    assert capsys.readouterr().out == ""

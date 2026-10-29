@@ -10,6 +10,8 @@ def _token_ok(monkeypatch):
         return FakeResponse(200, {"access_token": "a"})
 
     monkeypatch.setattr(spotify.requests, "post", post)
+    # Web API check: nothing playing (204) is a healthy answer
+    monkeypatch.setattr(spotify.requests, "get", lambda *a, **k: FakeResponse(204))
     return calls
 
 
@@ -78,3 +80,19 @@ def test_lastfm(client, monkeypatch, use_lastfm):
 def test_via_prefix(client):
     r = client.get("/api/spotify/health/auth")
     assert r.is_json
+
+
+def test_premium_required_detected(client, monkeypatch, use_spotify):
+    use_spotify("2026-10-29")
+    _token_ok(monkeypatch)
+    monkeypatch.setattr(spotify.requests, "get", lambda *a, **k: FakeResponse(403, text="Premium required"))
+    r = client.get("/health/auth")
+    assert r.status_code == 503
+    assert r.get_json()["error"] == "premium_required"
+
+
+def test_nothing_playing_is_ok(client, monkeypatch, use_spotify):
+    use_spotify("2026-10-29")
+    _token_ok(monkeypatch)
+    monkeypatch.setattr(spotify.requests, "get", lambda *a, **k: FakeResponse(204))
+    assert client.get("/health/auth").status_code == 200

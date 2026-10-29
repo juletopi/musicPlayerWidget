@@ -42,12 +42,11 @@ TEXTS: dict[str, dict[str, str]] = {
         "empty": "Nothing was pasted. Copy the whole address bar after approving access.",
         "denied": "Access was denied on the Spotify page. Run the script again and click Agree.",
         "no_code": "That URL has no 'code' parameter. Paste the address you land on after clicking Agree.",
-        "looks_like_refresh_token": (
-            "That looks like a refresh token, not an authorization code. "
-            "Paste the callback URL (https://example.com/callback?code=...)."
-        ),
         "exchange_failed": "Spotify rejected the code: {error} ({description})",
-        "code_hint": "Codes are single-use and expire in minutes; run the script again for a fresh one.",
+        "code_hint": (
+            "Codes are single-use and expire in minutes; run the script again for a fresh one. "
+            "Make sure you pasted the callback URL or its code, not a refresh token."
+        ),
         "client_hint": "Check the Client ID and Client Secret in the Spotify dashboard.",
         "network_hint": "Could not reach Spotify; check your connection (or your network proxy).",
         "done": "Done! Set these environment variables on Vercel (Settings > Environment Variables):",
@@ -63,12 +62,11 @@ TEXTS: dict[str, dict[str, str]] = {
         "empty": "Nada foi colado. Copie a barra de endereço inteira depois de aprovar o acesso.",
         "denied": "O acesso foi negado na página do Spotify. Rode o script de novo e clique em Concordo.",
         "no_code": "Essa URL não tem o parâmetro 'code'. Cole o endereço que aparece depois de clicar em Concordo.",
-        "looks_like_refresh_token": (
-            "Isso parece um refresh token, não um código de autorização. "
-            "Cole a URL do callback (https://example.com/callback?code=...)."
-        ),
         "exchange_failed": "O Spotify recusou o código: {error} ({description})",
-        "code_hint": "O código só pode ser usado uma vez e expira em minutos; rode o script de novo para gerar outro.",
+        "code_hint": (
+            "O código só pode ser usado uma vez e expira em minutos; rode o script de novo para gerar outro. "
+            "Confira se você colou a URL do callback ou o código dela, e não um refresh token."
+        ),
         "client_hint": "Confira o Client ID e o Client Secret no dashboard do Spotify.",
         "network_hint": "Não foi possível falar com o Spotify; confira a conexão (ou o proxy da rede).",
         "done": "Pronto! Configure estas variáveis de ambiente na Vercel (Settings > Environment Variables):",
@@ -121,9 +119,9 @@ def parse_callback(text: str) -> str:
             raise CallbackError("no_code")
         return codes[0]
 
-    # Spotify refresh tokens start with "AQ" and are much longer than codes
-    if text.startswith("AQ") and len(text) > 150:
-        raise CallbackError("looks_like_refresh_token")
+    # A bare code can't be told apart from a refresh token (both start with
+    # "AQ"); a refresh token pasted here fails the exchange with invalid_grant,
+    # and that error's hint explains the difference.
     return text
 
 

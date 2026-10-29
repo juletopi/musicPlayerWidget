@@ -36,7 +36,6 @@ def test_parse_callback_accepts(text):
         ("https://example.com/callback?error=access_denied", "denied"),
         ("", "empty"),
         ('  ""  ', "empty"),
-        ("AQ" + "x" * 200, "looks_like_refresh_token"),
         ("https://example.com/callback?state=x", "no_code"),
     ],
 )
@@ -72,3 +71,14 @@ def test_hint_matches_error():
     assert get_token.hint_key_for("invalid_client") == "client_hint"
     assert get_token.hint_key_for("invalid_grant") == "code_hint"
     assert get_token.hint_key_for("network_error") == "network_hint"
+
+
+def test_long_bare_code_is_accepted():
+    # Spotify authorization codes also start with "AQ" and can be long
+    code = "AQ" + "x" * 300
+    assert get_token.parse_callback(code) == code
+
+
+def test_invalid_grant_hint_mentions_refresh_token():
+    for lang in ("en", "pt-BR"):
+        assert "refresh token" in get_token.TEXTS[lang][get_token.hint_key_for("invalid_grant")]

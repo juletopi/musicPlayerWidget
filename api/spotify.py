@@ -195,12 +195,20 @@ def is_configured() -> bool:
 
 def check_auth() -> None:
     """
-    Verify the credentials with a real token refresh.
+    Verify the credentials with a real token refresh plus one Web API call.
+
+    The refresh alone succeeds even when the app owner's Premium has lapsed;
+    only the Web API answers 403 (premium_required) in that case.
 
     Raises:
         AuthenticationError: If the refresh fails (see classify_token_error)
+        APIError: If the Web API rejects the token
     """
     _token_manager.get_token(force_refresh=True)
+    try:
+        _api_get(spotify_config.now_playing_url)
+    except NoTracksError:
+        pass  # Nothing playing is a healthy answer
 
 
 def _api_get(url: str, retry_on_auth_error: bool = True) -> dict[str, Any]:
@@ -233,8 +241,8 @@ def _api_get(url: str, retry_on_auth_error: bool = True) -> dict[str, Any]:
             raise NoTracksError("Spotify")
 
         if response.status_code == 403:
-            # Development Mode apps need an active Premium owner and allowlisted users
-            print(f"[spotify] API forbidden: {response.text}")
+            # Development Mode apps need an active Premium owner and allowlisted users.
+            # Not printed here: audio-features always 403s for new apps; callers log it.
             raise APIError("Spotify", 403, response.text, code="premium_required")
 
         if response.status_code >= 500:
