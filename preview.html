@@ -502,6 +502,41 @@
         </div>
     </section>
 
+    <section>
+        <h2 class="pixel section-label" data-i18n="errorTitle">[ ERRO ]</h2>
+        <div class="widget-row">
+            <div class="widget-preview">
+                <img data-error-src="/preview/error?code=token_expired" src="/preview/error?code=token_expired&lang=pt-BR" alt="Error card" width="540" height="135" />
+                <br />
+                <img data-error-src="/preview/error?code=token_expired&compact=true" src="/preview/error?code=token_expired&compact=true&lang=pt-BR" alt="Compact error card" width="400" height="80" />
+                <p class="widget-desc" data-i18n="errorDesc">Card exibido quando a configuracao falha, no idioma de ?lang=.</p>
+            </div>
+            <div class="widget-snippets">
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">HTML</span>
+                        <button class="copy-btn" data-target="snip-error-html" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-error-html" class="snippet-code">&lt;a href="https://open.spotify.com/user/your_user_code"
+   target="_blank" rel="noopener noreferrer"&gt;
+    &lt;img
+        src="https://music-player-widget-ten.vercel.app/api/spotify/?lang=pt-BR"
+        alt="Now Playing"
+        width="540" height="135"
+    /&gt;
+&lt;/a&gt;</pre>
+                </div>
+                <div class="snippet-block">
+                    <div class="snippet-header">
+                        <span class="snippet-lang-label">MARKDOWN</span>
+                        <button class="copy-btn" data-target="snip-error-md" data-i18n-copy="copyBtn">[ COPIAR ]</button>
+                    </div>
+                    <pre id="snip-error-md" class="snippet-code">[![Now Playing](https://music-player-widget-ten.vercel.app/api/spotify/?lang=pt-BR)](https://open.spotify.com/user/your_user_code)</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <script>
         (function () {
             var i18n = {
@@ -516,6 +551,8 @@
                     blurLightDesc: "Capa desfocada com overlay claro e borda preta.",
                     compactTitle:  "[ MODO COMPACTO ]",
                     compactDesc:   "Widget em formato reduzido (400x80).",
+                    errorTitle:    "[ ERRO ]",
+                    errorDesc:     "Card exibido quando a configuracao falha, no idioma de <code>?lang=</code> (en ou pt-BR).",
                     copyBtn:       "[ COPIAR ]",
                     copyDone:      "[ COPIADO! ]"
                 },
@@ -530,6 +567,8 @@
                     blurLightDesc: "Blurred album art with light overlay and black border.",
                     compactTitle:  "[ COMPACT MODE ]",
                     compactDesc:   "Reduced-size widget (400x80).",
+                    errorTitle:    "[ ERROR ]",
+                    errorDesc:     "Card shown when the setup fails, in the language set by <code>?lang=</code> (en or pt-BR).",
                     copyBtn:       "[ COPY ]",
                     copyDone:      "[ COPIED! ]"
                 }
@@ -547,6 +586,9 @@
                 });
                 document.querySelectorAll(".copy-btn:not(.copied)").forEach(function (btn) {
                     btn.textContent = t.copyBtn;
+                });
+                document.querySelectorAll("[data-error-src]").forEach(function (img) {
+                    img.src = img.getAttribute("data-error-src") + "&lang=" + l;
                 });
                 document.documentElement.lang = l;
                 localStorage.setItem("lang", l);
