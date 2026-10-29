@@ -10,6 +10,7 @@ Requires environment variables:
 
 from __future__ import annotations
 
+import json
 import random
 import threading
 from base64 import b64encode
@@ -103,18 +104,28 @@ class SpotifyTokenManager:
                 data=data,
                 headers=headers,
                 timeout=10,
-                verify=False,
             )
-            response.raise_for_status()
-            result = response.json()
-
-            if "access_token" not in result:
-                raise AuthenticationError("Spotify", "No access token in response")
-
-            return result["access_token"]
-
         except requests.RequestException as e:
-            raise AuthenticationError("Spotify", str(e)) from e
+            raise AuthenticationError("Spotify", str(e), code="service_unavailable") from e
+
+        if not response.ok:
+            # Full body goes to the logs only; it never contains secrets
+            print(f"[spotify] token refresh failed: HTTP {response.status_code} {response.text}")
+            raise AuthenticationError(
+                "Spotify",
+                _error_description(response.text) or f"HTTP {response.status_code}",
+                code=classify_token_error(response.status_code, response.text),
+            )
+
+        try:
+            result = response.json()
+        except ValueError:
+            result = {}
+
+        if "access_token" not in result:
+            raise AuthenticationError("Spotify", "No access token in response")
+
+        return result["access_token"]
 
     def get_token(self, force_refresh: bool = False) -> str:
         """
@@ -139,6 +150,37 @@ class SpotifyTokenManager:
 
 # Global token manager instance
 _token_manager = SpotifyTokenManager()
+
+
+def _parse_error_body(body: str) -> dict[str, Any]:
+    """Parse an OAuth error body, returning {} when it is not a JSON object."""
+    try:
+        data = json.loads(body)
+    except (TypeError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _error_description(body: str) -> str:
+    """Extract error_description from a token endpoint error body."""
+    return str(_parse_error_body(body).get("error_description", ""))
+
+
+def classify_token_error(status_code: int, body: str) -> str:
+    """
+    Map a failed token endpoint response to an error code.
+
+    Only the OAuth "error" field is used; descriptions vary
+    ("Refresh token revoked", "Invalid refresh token", ...).
+    """
+    if status_code >= 500:
+        return "service_unavailable"
+    error = _parse_error_body(body).get("error")
+    if error == "invalid_grant":
+        return "token_expired"
+    if error == "invalid_client":
+        return "invalid_client"
+    return "auth_failed"
 
 
 def is_configured() -> bool:
@@ -170,7 +212,7 @@ def _api_get(url: str, retry_on_auth_error: bool = True) -> dict[str, Any]:
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
-        response = requests.get(url, headers=headers, timeout=10, verify=False)
+        response = requests.get(url, headers=headers, timeout=10)
 
         if response.status_code == 401 and retry_on_auth_error:
             # Token expired, refresh and retry once
@@ -180,13 +222,21 @@ def _api_get(url: str, retry_on_auth_error: bool = True) -> dict[str, Any]:
         if response.status_code == 204:
             raise NoTracksError("Spotify")
 
+        if response.status_code == 403:
+            # Development Mode apps need an active Premium owner and allowlisted users
+            print(f"[spotify] API forbidden: {response.text}")
+            raise APIError("Spotify", 403, response.text, code="premium_required")
+
+        if response.status_code >= 500:
+            raise APIError("Spotify", response.status_code, response.text, code="service_unavailable")
+
         if not response.ok:
             raise APIError("Spotify", response.status_code, response.text)
 
         return response.json()
 
     except requests.RequestException as e:
-        raise APIError("Spotify", 0, str(e)) from e
+        raise APIError("Spotify", 0, str(e), code="service_unavailable") from e
 
 
 def get_recent_tracks(limit: int = 10) -> dict[str, Any]:
@@ -302,10 +352,13 @@ def get_now_playing() -> dict[str, Any]:
     """
     is_playing = False
     item: Optional[dict[str, Any]] = None
+    playing_type: Optional[str] = None
 
     # Try to get currently playing track
     try:
         data = _api_get(spotify_config.now_playing_url)
+        if data:
+            playing_type = data.get("currently_playing_type")
         if data and "item" in data:
             is_playing = data.get("is_playing", False)
             item = data["item"]
@@ -318,6 +371,11 @@ def get_now_playing() -> dict[str, Any]:
         items = data.get("items", [])
 
         if not items:
+            # Logged to confirm what triggers no_tracks in practice (e.g. podcasts)
+            print(
+                f"[spotify] no_tracks: currently_playing_type={playing_type} "
+                f"recently_played_items={len(items)}"
+            )
             raise NoTracksError("Spotify")
 
         # Pick a random recent track for variety

@@ -134,7 +134,6 @@ def _fetch_album_art_from_deezer(artist_name: str, track_name: str) -> str:
             lastfm_config.deezer_search_url,
             params=params,
             timeout=5,
-            verify=False,
         )
 
         if response.ok:
@@ -152,7 +151,6 @@ def _fetch_album_art_from_deezer(artist_name: str, track_name: str) -> str:
             lastfm_config.deezer_search_url,
             params=params,
             timeout=5,
-            verify=False,
         )
 
         if response.ok:
@@ -194,8 +192,10 @@ def _api_get(params: dict[str, Any]) -> dict[str, Any]:
             lastfm_config.api_url,
             params=params,
             timeout=10,
-            verify=False,
         )
+
+        if response.status_code >= 500:
+            raise APIError("Last.fm", response.status_code, response.text, code="service_unavailable")
 
         if not response.ok:
             raise APIError("Last.fm", response.status_code, response.text)
@@ -212,7 +212,7 @@ def _api_get(params: dict[str, Any]) -> dict[str, Any]:
         return data
 
     except requests.RequestException as e:
-        raise APIError("Last.fm", 0, str(e)) from e
+        raise APIError("Last.fm", 0, str(e), code="service_unavailable") from e
 
 
 def get_recent_tracks(limit: int = 10) -> dict[str, Any]:
