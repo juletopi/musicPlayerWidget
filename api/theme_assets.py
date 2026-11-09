@@ -28,6 +28,7 @@ def stardew_assets() -> dict[str, str]:
         "font_regular": asset_base64("stardew/StardewValley.woff2"),
         "font_bold": asset_base64("stardew/StardewValleyBold.woff2"),
         "border": asset_base64("stardew/tooltip_border.png"),
+        "tab": asset_base64("stardew/tab_border_side.png"),
     }
 
 

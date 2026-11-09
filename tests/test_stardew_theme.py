@@ -90,11 +90,57 @@ def test_stardew_svg_stays_small(widget):
     assert overhead < 20_000
 
 
+def test_stardew_embeds_tab_frame(widget):
+    from api.theme_assets import asset_base64
+
+    assert asset_base64("stardew/tab_border_side.png") in widget("?theme=stardew")
+
+
 @pytest.mark.parametrize("compact", [False, True])
-def test_stardew_layout_fills_height(compact):
-    # Bars are placed in Python from these numbers; the art must fill the box.
-    from api.config import layout_config
+def test_stardew_tab_fits_height(compact):
+    from api.config import layout_config, theme_style
 
     cfg = layout_config("stardew", compact)
-    vertical = cfg.widget_padding_top + cfg.widget_padding_bottom + 2 * cfg.widget_border_width
-    assert cfg.album_art_size + vertical == cfg.height
+    tab = theme_style("stardew", compact)["tab_frame"]
+    pad = theme_style("stardew", compact)["tab_padding"]
+    assert cfg.album_art_size + tab["top"] + tab["bottom"] + 2 * pad <= cfg.height
+
+
+@pytest.mark.parametrize("query", ["?theme=stardew", "?theme=stardew&compact=true"])
+def test_stardew_bars_inside_content_box(widget, query):
+    # Bars are placed in Python; they must land inside the framed content box,
+    # to the right of the cover tab.
+    import re
+
+    from api.config import layout_config, theme_style
+
+    compact = "compact" in query
+    cfg = layout_config("stardew", compact)
+    style = theme_style("stardew", compact)
+    tab, box = style["tab_frame"], style["box_frame"]
+
+    tab_width = cfg.album_art_size + tab["left"] + tab["right"] + 2 * style["tab_padding"]
+    inner_left = tab_width + box["left"]
+    inner_right = cfg.width - box["right"]
+    inner_bottom = cfg.height - box["bottom"]
+
+    svg = widget(query)
+    starts = [(float(x), float(y)) for x, y in re.findall(r'class="bar" d="M ([\d.]+),([\d.]+)', svg)]
+    assert len(starts) == cfg.eq_bar_count
+    assert min(x for x, _ in starts) >= inner_left
+    right_edges = [float(x) for x in re.findall(r'L ([\d.]+),[\d.]+ Z', svg)]
+    assert max(right_edges) <= inner_right + 0.01
+    assert max(y for _, y in starts) <= inner_bottom
+
+
+def test_stardew_bars_have_square_corners(widget):
+    import re
+
+    def bar_paths(svg):
+        return re.findall(r'<path class="bar" d="([^"]+)"', svg)
+
+    # Default theme keeps the rounded tops (quadratic curves)...
+    assert all(" Q " in d for d in bar_paths(widget()))
+    # ...stardew bars are plain rectangles, for a pixel look
+    stardew = bar_paths(widget("?theme=stardew"))
+    assert stardew and all(" Q " not in d for d in stardew)

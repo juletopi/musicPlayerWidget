@@ -1,30 +1,24 @@
 {% extends "base.html.j2" %}
 
 {#
-  Stardew theme: dialogue-box look with an embedded pixel font and frame.
+  Stardew theme: the cover sits in a side tab (tab_border_side.png) attached
+  to a dialogue box (tooltip_border.png) that holds the text and the bars,
+  like the side tabs of the portfolio. Pixel font embedded.
   Assets come base64-encoded from api/theme_assets.py (the SVG cannot load files).
-  Layout numbers (border, padding, art size) come from THEME_LAYOUT_OVERRIDES
-  in config.py, so the equalizer bars line up with this frame.
+  Layout numbers come from THEME_LAYOUTS in config.py (the "style" variable),
+  the same numbers the equalizer bar geometry uses.
 #}
 
 {% block container_styles %}
-/* Stardew theme - parchment box inside the 9-slice wooden frame.
-   The frame art is 16px thick on top/right/bottom and 12px on the left
-   (pixel art at 2x), drawn at half size: 8px / 6px. The 2px the left
-   edge saves goes to padding, keeping the bar geometry from config.py. */
-background-color: #ffc878;
-background-clip: padding-box;
+/* Stardew theme - no frame on the container: the tab and the box have their own */
+background: transparent;
+border: none;
 border-radius: 0;
-border-style: solid;
-border-width: var(--widget-border-width) var(--widget-border-width) var(--widget-border-width) calc(var(--widget-border-width) * 0.75);
-padding-left: calc(var(--widget-padding-left) + var(--widget-border-width) * 0.25);
-border-image-source: url("data:image/png;base64,{{ assets.border }}");
-border-image-slice: 16 16 16 12;
-border-image-repeat: stretch;
-image-rendering: pixelated;
 {% endblock %}
 
 {% block theme_styles %}
+{% set tab = style.tab_frame %}
+{% set box = style.box_frame %}
 @font-face {
     font-family: 'StardewValley';
     src: url("data:font/woff2;base64,{{ assets.font_regular }}") format('woff2');
@@ -41,6 +35,43 @@ image-rendering: pixelated;
 
 div {
     font-family: 'StardewValley', 'Courier New', monospace;
+}
+
+/* Cover tab: frame on top/left/bottom, open (thin) on the right where it
+   meets the box. Pixel art at 2x drawn at half size: crisp pixels. */
+.art {
+    width: {{ album_size + tab.left + tab.right + 2 * style.tab_padding }}px;
+    height: {{ album_size + tab.top + tab.bottom + 2 * style.tab_padding }}px;
+    padding: {{ style.tab_padding }}px;
+    background-color: #ffc878;
+    background-clip: padding-box;
+    border-style: solid;
+    border-width: {{ tab.top }}px {{ tab.right }}px {{ tab.bottom }}px {{ tab.left }}px;
+    border-image-source: url("data:image/png;base64,{{ assets.tab }}");
+    border-image-slice: 16 4 16 16;
+    border-image-repeat: stretch;
+    image-rendering: pixelated;
+}
+
+/* Dialogue box around the text and the bars */
+.content {
+    align-self: stretch;
+    justify-content: center;
+    padding: 0 {{ style.box_padding_x }}px;
+    background-color: #ffc878;
+    background-clip: padding-box;
+    border-style: solid;
+    border-width: {{ box.top }}px {{ box.right }}px {{ box.bottom }}px {{ box.left }}px;
+    border-image-source: url("data:image/png;base64,{{ assets.border }}");
+    border-image-slice: 16 16 16 12;
+    border-image-repeat: stretch;
+    image-rendering: pixelated;
+}
+
+/* Links take the content width, so scrolling titles are clipped before the
+   box padding instead of running into the frame */
+.content > a {
+    width: 100%;
 }
 
 /* Solid dark-brown text with the game's offset shadow (no gradient) */
@@ -72,21 +103,20 @@ div {
 }
 
 {% if is_compact %}
-/* Compact: 56px of height for status + song + artist + bars */
+/* Compact: 64px of box height for status + song + artist + bars */
 .song, .artist, .status {
     line-height: 1.05;
 }
 {% endif %}
 
-/* Album art sits in a thin wooden inset, like an item slot */
-.cover {
-    border-radius: 0;
-    image-rendering: pixelated;
-    box-shadow: 0 0 0 2px #b14e05, 2px 2px 0 2px rgba(133, 54, 5, 0.6);
-}
-
+/* The tab is the cover's frame */
+.cover,
+.container.blur-bg .cover,
 .art:hover .cover {
-    box-shadow: 0 0 0 2px #b14e05, 2px 2px 0 2px rgba(133, 54, 5, 0.6);
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    image-rendering: pixelated;
 }
 
 {% endblock %}

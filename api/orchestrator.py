@@ -26,6 +26,7 @@ from .config import (
     FIXED_LOOK_THEMES,
     ColorPalette,
     layout_config,
+    theme_style,
     svg_config,
     template_config,
     validate_background_type,
@@ -263,6 +264,7 @@ def generate_bar_svg(
     bar_height: int,
     gap: int = 1,
     bar_palette: Optional[list] = None,
+    radius: float = 2.0,
 ) -> str:
     """
     Generate SVG ``<rect>`` elements for the equalizer bars.
@@ -280,6 +282,7 @@ def generate_bar_svg(
         bar_height: Height of each bar in SVG user units
         gap: Gap between bars in SVG user units
         bar_palette: RGB tuples for initial fill colours
+        radius: Radius of the top corners (0 = square, pixel look)
 
     Returns:
         SVG markup string containing ``<rect>`` elements
@@ -290,27 +293,34 @@ def generate_bar_svg(
     y = y_bottom - bar_height
 
     paths: list[str] = []
-    
-    # Radius for top corners
-    r = 2.0
-    
+
+    # Clamp radius if bar is too narrow
+    actual_r = min(radius, bar_width / 2)
+
     for i in range(bar_count):
         x = x_start + i * stride
-        
-        # Clamp radius if bar is too narrow
-        actual_r = min(r, bar_width / 2)
-        
-        # Path for top-rounded bar
-        # Start bottom-left -> go up -> curve top-left -> line top -> curve top-right -> go down -> close
-        d = (
-            f"M {x:.2f},{y + bar_height:.2f} "  # Bottom-left (y is top, so y+height is bottom)
-            f"L {x:.2f},{y + actual_r:.2f} "    # Left vertical up to start of curve
-            f"Q {x:.2f},{y:.2f} {x + actual_r:.2f},{y:.2f} " # Top-left curve
-            f"L {x + bar_width - actual_r:.2f},{y:.2f} "      # Top horizontal
-            f"Q {x + bar_width:.2f},{y:.2f} {x + bar_width:.2f},{y + actual_r:.2f} " # Top-right curve
-            f"L {x + bar_width:.2f},{y + bar_height:.2f} "    # Right vertical down
-            f"Z" # Close
-        )
+
+        if actual_r > 0:
+            # Path for top-rounded bar
+            # Start bottom-left -> go up -> curve top-left -> line top -> curve top-right -> go down -> close
+            d = (
+                f"M {x:.2f},{y + bar_height:.2f} "  # Bottom-left (y is top, so y+height is bottom)
+                f"L {x:.2f},{y + actual_r:.2f} "    # Left vertical up to start of curve
+                f"Q {x:.2f},{y:.2f} {x + actual_r:.2f},{y:.2f} " # Top-left curve
+                f"L {x + bar_width - actual_r:.2f},{y:.2f} "      # Top horizontal
+                f"Q {x + bar_width:.2f},{y:.2f} {x + bar_width:.2f},{y + actual_r:.2f} " # Top-right curve
+                f"L {x + bar_width:.2f},{y + bar_height:.2f} "    # Right vertical down
+                f"Z" # Close
+            )
+        else:
+            # Square bar: bottom-left -> top-left -> top-right -> bottom-right
+            d = (
+                f"M {x:.2f},{y + bar_height:.2f} "
+                f"L {x:.2f},{y:.2f} "
+                f"L {x + bar_width:.2f},{y:.2f} "
+                f"L {x + bar_width:.2f},{y + bar_height:.2f} "
+                f"Z"
+            )
 
         color = palette[i % len(palette)]
         fill = f"rgb({color[0]},{color[1]},{color[2]})"
@@ -458,16 +468,21 @@ def make_svg(
     # --- SVG bar positioning ---
     # Compute the bar area rectangle in SVG user-space coordinates.
     # x: content starts after left-padding + border + album art + gap
+    # (art_frame_width and content_inset_* are 0 unless the theme frames the
+    # art and the content separately, like stardew's cover tab)
     bar_x_start = (
         cfg.widget_padding_left
         + cfg.widget_border_width
         + cfg.album_art_size
+        + cfg.art_frame_width
         + cfg.art_content_gap
+        + cfg.content_inset_left
     )
     bar_x_end = (
         cfg.width
         - cfg.widget_padding_right
         - cfg.widget_border_width
+        - cfg.content_inset_right
     )
     bar_area_width = bar_x_end - bar_x_start
 
@@ -500,6 +515,7 @@ def make_svg(
         bar_area_width,
         bar_max_height,
         gap=cfg.eq_bar_gap,
+        radius=cfg.eq_bar_radius,
         bar_palette=bar_palette,
     )
 
@@ -575,6 +591,8 @@ def make_svg(
         "is_compact": is_compact,
         # Theme assets (base64), empty for themes without assets
         "assets": THEME_ASSETS[theme_name]() if theme_name in THEME_ASSETS else {},
+        # Extra layout numbers for the theme CSS (frames, paddings)
+        "style": theme_style(theme_name, is_compact),
     }
 
     return render_template(template_name, **template_data)

@@ -83,6 +83,12 @@ class SVGConfig:
     widget_border_width: int = 1
     art_content_gap: int = 7       # gap between album art and text/bars column
 
+    # Extra room for themes that frame the art and the content separately
+    # (0 = plain layout). Read by the bar geometry in orchestrator.make_svg.
+    art_frame_width: int = 0       # horizontal frame + padding around the art
+    content_inset_left: int = 0    # content box border + padding, left side
+    content_inset_right: int = 0   # content box border + padding, right side
+
     # Equalizer bar area (spacer div that reserves space for SVG bar overlay)
     eq_spacer_height: int = 45
     eq_spacer_margin_top: int = 15
@@ -94,6 +100,7 @@ class SVGConfig:
     eq_bar_count: int = 80
     eq_bar_max_height: int = 45
     eq_bar_gap: int = 1
+    eq_bar_radius: float = 2.0    # top corners; 0 = square
 
     # Estimated height of the content column (song + artist + eq spacer)
     # used to vertically centre the SVG bar rects.
@@ -155,6 +162,11 @@ class CompactSVGConfig:
     widget_border_width: int = 1
     art_content_gap: int = 10
 
+    # Separate art/content frames (see SVGConfig)
+    art_frame_width: int = 0
+    content_inset_left: int = 0
+    content_inset_right: int = 0
+
     # Equalizer bar area
     eq_spacer_height: int = 14
     eq_spacer_margin_top: int = 5
@@ -166,6 +178,7 @@ class CompactSVGConfig:
     eq_bar_count: int = 50
     eq_bar_max_height: int = 14
     eq_bar_gap: int = 1
+    eq_bar_radius: float = 2.0    # top corners; 0 = square
 
     # Content column height (centering)
     # song ~19 + artist ~15 + margin 5 + spacer 14 = ~53
@@ -250,41 +263,40 @@ class TemplateConfig:
 # background_type (blur) from the request are ignored.
 FIXED_LOOK_THEMES = frozenset({"stardew"})
 
-# Per-theme layout overrides, keyed by theme then by compact mode.
-# They replace SVGConfig/CompactSVGConfig fields, so the CSS and the
-# Python-side bar geometry keep reading the same numbers.
-# Stardew: the border is the 9-slice frame (pixel art at 2x, drawn at 0.5 so
-# each art pixel lands on one CSS pixel), much thicker than the default 1px.
-#   normal:  135 - 2*(8 border + 6 padding) = 107 art
-#   compact:  80 - 2*(8 border + 4 padding) = 56 art
-THEME_LAYOUT_OVERRIDES: dict[str, dict[bool, dict[str, Any]]] = {
-    "stardew": {
-        False: {
-            "widget_border_width": 8,
-            "widget_padding_top": 6,
-            "widget_padding_right": 8,
-            "widget_padding_bottom": 6,
-            "widget_padding_left": 6,
-            "album_art_size": 107,
-            "art_content_gap": 10,
-            "border_radius": 2,
-            # energy adds up to 8px at render time; keep clear of the artist
-            "eq_bar_max_height": 30,
-            "eq_spacer_height": 36,
-            "eq_spacer_margin_top": 6,
-            # The pixel font has small metrics: bump sizes to stay legible
-            "song_font_size": 24,
-            "artist_font_size": 20,
-        },
-        True: {
-            "widget_border_width": 8,
-            "widget_padding_top": 4,
-            "widget_padding_right": 6,
-            "widget_padding_bottom": 4,
-            "widget_padding_left": 4,
-            "album_art_size": 56,
-            "art_content_gap": 8,
-            "border_radius": 2,
+# Stardew frames are pixel art at 2x drawn at half size, so each art pixel
+# lands on one CSS pixel. Thickness per side, in CSS px:
+#   box: tooltip_border.png (16/16/16/12 art px) around the text and bars
+#   tab: tab_border_side.png (16/4/16/16 art px) around the cover, open on
+#        the right where it meets the box, like the side tabs of the portfolio
+STARDEW_BOX_FRAME = {"top": 8, "right": 8, "bottom": 8, "left": 6}
+STARDEW_TAB_FRAME = {"top": 8, "right": 2, "bottom": 8, "left": 8}
+
+
+def _stardew_layout(is_compact: bool) -> Tuple[dict[str, Any], dict[str, Any]]:
+    """Config overrides and template style numbers for the stardew theme."""
+    tab_padding = 2 if is_compact else 4
+    box_padding_x = 6 if is_compact else 10
+    tab, box = STARDEW_TAB_FRAME, STARDEW_BOX_FRAME
+
+    overrides: dict[str, Any] = {
+        # The container has no frame of its own: the tab and the box do
+        "widget_border_width": 0,
+        "widget_padding_top": 0,
+        "widget_padding_right": 0,
+        "widget_padding_bottom": 0,
+        "widget_padding_left": 0,
+        "art_content_gap": 0,
+        "border_radius": 0,
+        # Square bars for the pixel look
+        "eq_bar_radius": 0,
+        # normal: tab 103 + 2*(8+4) = 127 of 135; compact: 56 + 2*(8+2) = 76 of 80
+        "album_art_size": 56 if is_compact else 103,
+        "art_frame_width": tab["left"] + tab["right"] + 2 * tab_padding,
+        "content_inset_left": box["left"] + box_padding_x,
+        "content_inset_right": box["right"] + box_padding_x,
+    }
+    if is_compact:
+        overrides.update({
             # energy adds up to 8px at render time; keep clear of the artist
             "eq_bar_max_height": 9,
             "eq_spacer_height": 12,
@@ -292,8 +304,33 @@ THEME_LAYOUT_OVERRIDES: dict[str, dict[bool, dict[str, Any]]] = {
             "song_font_size": 17,
             "artist_font_size": 14,
             "artist_margin_top": 0,
-        },
-    },
+        })
+    else:
+        overrides.update({
+            # energy adds up to 8px at render time; keep clear of the artist
+            "eq_bar_max_height": 30,
+            "eq_spacer_height": 36,
+            "eq_spacer_margin_top": 6,
+            # The pixel font has small metrics: bump sizes to stay legible
+            "song_font_size": 24,
+            "artist_font_size": 20,
+        })
+
+    style = {
+        "tab_frame": tab,
+        "box_frame": box,
+        "tab_padding": tab_padding,
+        "box_padding_x": box_padding_x,
+    }
+    return overrides, style
+
+
+# Per-theme layout, keyed by theme then by compact mode:
+# (config field overrides, extra numbers for the template CSS).
+# Both come from the same numbers, so the CSS and the Python-side bar
+# geometry stay in sync.
+THEME_LAYOUTS: dict[str, dict[bool, Tuple[dict[str, Any], dict[str, Any]]]] = {
+    "stardew": {False: _stardew_layout(False), True: _stardew_layout(True)},
 }
 
 
@@ -302,8 +339,14 @@ def layout_config(
 ) -> Union["SVGConfig", "CompactSVGConfig"]:
     """Return the layout config for a theme and mode, with overrides applied."""
     base = compact_svg_config if is_compact else svg_config
-    overrides = THEME_LAYOUT_OVERRIDES.get(theme, {}).get(is_compact)
-    return replace(base, **overrides) if overrides else base
+    layout = THEME_LAYOUTS.get(theme, {}).get(is_compact)
+    return replace(base, **layout[0]) if layout else base
+
+
+def theme_style(theme: str, is_compact: bool) -> dict[str, Any]:
+    """Return the extra template numbers for a theme and mode (empty if none)."""
+    layout = THEME_LAYOUTS.get(theme, {}).get(is_compact)
+    return layout[1] if layout else {}
 
 
 # Validation utilities
