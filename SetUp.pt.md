@@ -204,6 +204,8 @@ docker compose down
 | `border_color` | Cor da borda (hex sem `#`) | `181414` | `ffffff` |
 | `background_type` | Estilo de fundo: `color`, `blur_dark`, `blur_light` | `color` | `blur_dark` |
 | `show_status` | Mostra "Vibing to:" ou "Recently played:" | `false` | `true` |
+| `compact` | Layout reduzido de 400x80 | `false` | `true` |
+| `theme` | Tema desta URL (sobrepõe o `current-theme`, veja [Templates de tema](#templates-de-tema)) | `current-theme` | `stardew` |
 | `lang` | Idioma dos [cards de erro](#cards-de-erro): `en` ou `pt-BR` | `en` | `pt-BR` |
 
 #### Tipos de fundo
@@ -250,6 +252,13 @@ Tudo junto:
 https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark&border_color=333333&show_status=true
 ```
 
+Tema Stardew, com e sem status (também funciona com `compact=true`):
+
+```text
+https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew
+https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&show_status=true
+```
+
 ### Templates de tema
 
 Altere o `current-theme` em `api/templates.json`:
@@ -260,14 +269,20 @@ Altere o `current-theme` em `api/templates.json`:
   "templates": {
     "light": "spotify.html.j2",
     "dark": "spotify-dark.html.j2",
+    "stardew": "stardew.html.j2",
     "base": "base.html.j2"
   }
 }
 ```
 
+Qualquer chave de `templates` também pode ser escolhida por URL com `?theme=<chave>`; valores desconhecidos usam o `current-theme`.
+
 Temas disponíveis:
 - `light`: fundo transparente, sem borda
 - `dark`: fundo e borda customizáveis
+- `stardew`: caixa de diálogo em pixel art com fonte pixel embutida. Visual fixo: ignora `background_color`, `border_color` e `background_type`
+
+Temas que usam fontes ou imagens (como o `stardew`) guardam os arquivos em `api/assets/` e os registram em `THEME_ASSETS` (`api/theme_assets.py`): o SVG é exibido via `<img>`, então todo asset vai embutido em base64. Mudanças de layout (borda mais grossa, fontes maiores) ficam em `THEME_LAYOUT_OVERRIDES` (`api/config.py`), para as barras do equalizador continuarem alinhadas.
 
 ### Criar tema customizado
 

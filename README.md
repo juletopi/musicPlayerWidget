@@ -55,6 +55,20 @@
 
 [![Status On](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)
 
+### Extras
+
+**Stardew**
+
+[![Stardew](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew)](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew)
+
+**Stardew com status**
+
+[![Stardew Status](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&show_status=true)](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&show_status=true)
+
+**Stardew compacto**
+
+[![Stardew Compact](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&compact=true)](https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&compact=true)
+
 </div>
 
 <div align="left">

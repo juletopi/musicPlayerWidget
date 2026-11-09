@@ -195,6 +195,8 @@ You can customize the appearance of your widget using URL query parameters:
 | `border_color` | Card border color (hex, without `#`) | `181414` | `ffffff` |
 | `background_type` | Background style: `color`, `blur_dark`, or `blur_light` | `color` | `blur_dark` |
 | `show_status` | Show "Vibing to:" or "Recently played:" text | `false` | `true` |
+| `compact` | Smaller 400x80 layout | `false` | `true` |
+| `theme` | Theme for this URL (overrides `current-theme`, see [Theme Templates](#theme-templates)) | `current-theme` | `stardew` |
 | `lang` | Language of the [error cards](#error-cards): `en` or `pt-BR` | `en` | `pt-BR` |
 
 #### Background Types
@@ -235,6 +237,12 @@ Full customization with blur:
 https://music-player-widget-ten.vercel.app/api/spotify/?background_type=blur_dark&border_color=333333&show_status=true
 ```
 
+**Stardew theme** (with and without status, also works with `compact=true`):
+```
+https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew
+https://music-player-widget-ten.vercel.app/api/spotify/?theme=stardew&show_status=true
+```
+
 ### Theme Templates
 
 Change the widget theme by editing the `current-theme` property in `api/templates.json`:
@@ -245,14 +253,20 @@ Change the widget theme by editing the `current-theme` property in `api/template
     "templates": {
         "light": "spotify.html.j2",
         "dark": "spotify-dark.html.j2",
+        "stardew": "stardew.html.j2",
         "base": "base.html.j2"
     }
 }
 ```
 
+Any key under `templates` can also be picked per URL with `?theme=<key>`; unknown values fall back to `current-theme`.
+
 Available themes:
 - `light` - Transparent background, no border
 - `dark` - Customizable background and border colors
+- `stardew` - Pixel-art dialogue box with an embedded pixel font. Fixed look: ignores `background_color`, `border_color` and `background_type`
+
+Themes that need fonts or images (like `stardew`) keep them in `api/assets/` and register them in `THEME_ASSETS` (`api/theme_assets.py`): the SVG is shown through `<img>`, so every asset is embedded as base64. Layout changes (thicker border, bigger fonts) go in `THEME_LAYOUT_OVERRIDES` (`api/config.py`), so the equalizer bars stay aligned.
 
 ### Creating Custom Themes
 
