@@ -21,9 +21,11 @@ from base64 import b64encode
 from colorthief import ColorThief
 from flask import Flask, Response, render_template, request, redirect
 
+from .theme_assets import THEME_ASSETS
 from .config import (
+    FIXED_LOOK_THEMES,
     ColorPalette,
-    compact_svg_config,
+    layout_config,
     svg_config,
     template_config,
     validate_background_type,
@@ -322,21 +324,32 @@ def generate_bar_svg(
     return "\n".join(paths)
 
 
-def get_template_name() -> str:
+def resolve_theme(requested: Optional[str] = None) -> Tuple[str, str]:
     """
-    Get the current theme template name from configuration.
-    
+    Pick the theme for a request.
+
+    A theme named in the request (?theme=) wins when templates.json knows it;
+    otherwise the configured current-theme is used.
+
+    Args:
+        requested: Lowercased theme from the query string, if any
+
     Returns:
-        Template filename
+        Tuple of (theme_name, template_filename)
     """
     try:
         with open(template_config.config_path, "r", encoding="utf-8") as f:
-            templates = json.load(f)
-            theme = templates.get("current-theme", template_config.default_theme)
-            return templates.get("templates", {}).get(theme, template_config.fallback_theme)
+            config = json.load(f)
     except (OSError, json.JSONDecodeError) as e:
         print(f"Failed to load templates: {e}")
-        return template_config.fallback_theme
+        return ("base", template_config.fallback_theme)
+
+    templates = config.get("templates", {})
+    if requested and requested in templates:
+        return (requested, templates[requested])
+
+    theme = config.get("current-theme", template_config.default_theme)
+    return (theme, templates.get(theme, template_config.fallback_theme))
 
 
 def escape_xml(text: str) -> str:
@@ -394,6 +407,7 @@ def make_svg(
     background_type: str = "color",
     show_status: bool = False,
     is_compact: bool = False,
+    theme: Optional[str] = None,
 ) -> str:
     """
     Generate SVG widget from normalized track data.
@@ -405,12 +419,19 @@ def make_svg(
         background_type: Type of background ("color", "blur_dark", "blur_light")
         show_status: Whether to show "Vibing to:" / "Recently played:" text
         is_compact: Whether to use compact mode layout
+        theme: Theme requested via ?theme= (falls back to templates.json)
     
     Returns:
         Rendered SVG template string
     """
-    # Select configuration based on mode
-    cfg = compact_svg_config if is_compact else svg_config
+    theme_name, template_name = resolve_theme(theme)
+
+    # Fixed-look themes draw their own background and frame
+    if theme_name in FIXED_LOOK_THEMES:
+        background_type = "color"
+
+    # Select configuration based on mode (and theme layout overrides)
+    cfg = layout_config(theme_name, is_compact)
     
     bar_count = cfg.eq_bar_count
 
@@ -551,9 +572,12 @@ def make_svg(
         # Marquee
         "song_marquee": song_marquee,
         "artist_marquee": artist_marquee,
+        "is_compact": is_compact,
+        # Theme assets (base64), empty for themes without assets
+        "assets": THEME_ASSETS[theme_name]() if theme_name in THEME_ASSETS else {},
     }
 
-    return render_template(get_template_name(), **template_data)
+    return render_template(template_name, **template_data)
 
 
 # ============================================================================
@@ -641,6 +665,7 @@ def _widget_params() -> dict[str, Any]:
         "show_status": request.args.get("show_status", "").lower() in ("true", "1", "yes"),
         "is_compact": request.args.get("compact", "").lower() in ("true", "1", "yes"),
         "lang": normalize_lang(request.args.get("lang")),
+        "theme": request.args.get("theme", "").strip().lower() or None,
     }
 
 
@@ -684,6 +709,7 @@ def catch_all(path: str) -> Response:
         params["background_type"],
         params["show_status"],
         params["is_compact"],
+        params["theme"],
     )
 
     resp = Response(svg, mimetype="image/svg+xml")

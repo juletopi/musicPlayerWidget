@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass, field
-from typing import Tuple
+from dataclasses import dataclass, field, replace
+from typing import Any, Tuple, Union
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -244,6 +244,66 @@ class TemplateConfig:
     config_path: str = "api/templates.json"
     fallback_theme: str = "base.html.j2"
     default_theme: str = "dark"
+
+
+# Themes with a fixed look: background_color, border_color and
+# background_type (blur) from the request are ignored.
+FIXED_LOOK_THEMES = frozenset({"stardew"})
+
+# Per-theme layout overrides, keyed by theme then by compact mode.
+# They replace SVGConfig/CompactSVGConfig fields, so the CSS and the
+# Python-side bar geometry keep reading the same numbers.
+# Stardew: the border is the 9-slice frame (pixel art at 2x, drawn at 0.5 so
+# each art pixel lands on one CSS pixel), much thicker than the default 1px.
+#   normal:  135 - 2*(8 border + 6 padding) = 107 art
+#   compact:  80 - 2*(8 border + 4 padding) = 56 art
+THEME_LAYOUT_OVERRIDES: dict[str, dict[bool, dict[str, Any]]] = {
+    "stardew": {
+        False: {
+            "widget_border_width": 8,
+            "widget_padding_top": 6,
+            "widget_padding_right": 8,
+            "widget_padding_bottom": 6,
+            "widget_padding_left": 6,
+            "album_art_size": 107,
+            "art_content_gap": 10,
+            "border_radius": 2,
+            # energy adds up to 8px at render time; keep clear of the artist
+            "eq_bar_max_height": 30,
+            "eq_spacer_height": 36,
+            "eq_spacer_margin_top": 6,
+            # The pixel font has small metrics: bump sizes to stay legible
+            "song_font_size": 24,
+            "artist_font_size": 20,
+        },
+        True: {
+            "widget_border_width": 8,
+            "widget_padding_top": 4,
+            "widget_padding_right": 6,
+            "widget_padding_bottom": 4,
+            "widget_padding_left": 4,
+            "album_art_size": 56,
+            "art_content_gap": 8,
+            "border_radius": 2,
+            # energy adds up to 8px at render time; keep clear of the artist
+            "eq_bar_max_height": 9,
+            "eq_spacer_height": 12,
+            "eq_spacer_margin_top": 3,
+            "song_font_size": 17,
+            "artist_font_size": 14,
+            "artist_margin_top": 0,
+        },
+    },
+}
+
+
+def layout_config(
+    theme: str, is_compact: bool
+) -> Union["SVGConfig", "CompactSVGConfig"]:
+    """Return the layout config for a theme and mode, with overrides applied."""
+    base = compact_svg_config if is_compact else svg_config
+    overrides = THEME_LAYOUT_OVERRIDES.get(theme, {}).get(is_compact)
+    return replace(base, **overrides) if overrides else base
 
 
 # Validation utilities

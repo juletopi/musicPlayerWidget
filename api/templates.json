@@ -3,6 +3,7 @@
     "templates": {
         "light": "spotify.html.j2",
         "dark": "spotify-dark.html.j2",
+        "stardew": "stardew.html.j2",
         "base": "base.html.j2"
     }
 }

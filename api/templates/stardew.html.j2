@@ -1,0 +1,92 @@
+{% extends "base.html.j2" %}
+
+{#
+  Stardew theme: dialogue-box look with an embedded pixel font and frame.
+  Assets come base64-encoded from api/theme_assets.py (the SVG cannot load files).
+  Layout numbers (border, padding, art size) come from THEME_LAYOUT_OVERRIDES
+  in config.py, so the equalizer bars line up with this frame.
+#}
+
+{% block container_styles %}
+/* Stardew theme - parchment box inside the 9-slice wooden frame.
+   The frame art is 16px thick on top/right/bottom and 12px on the left
+   (pixel art at 2x), drawn at half size: 8px / 6px. The 2px the left
+   edge saves goes to padding, keeping the bar geometry from config.py. */
+background-color: #ffc878;
+background-clip: padding-box;
+border-radius: 0;
+border-style: solid;
+border-width: var(--widget-border-width) var(--widget-border-width) var(--widget-border-width) calc(var(--widget-border-width) * 0.75);
+padding-left: calc(var(--widget-padding-left) + var(--widget-border-width) * 0.25);
+border-image-source: url("data:image/png;base64,{{ assets.border }}");
+border-image-slice: 16 16 16 12;
+border-image-repeat: stretch;
+image-rendering: pixelated;
+{% endblock %}
+
+{% block theme_styles %}
+@font-face {
+    font-family: 'StardewValley';
+    src: url("data:font/woff2;base64,{{ assets.font_regular }}") format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'StardewValleyBold';
+    src: url("data:font/woff2;base64,{{ assets.font_bold }}") format('woff2');
+    font-weight: bold;
+    font-style: normal;
+}
+
+div {
+    font-family: 'StardewValley', 'Courier New', monospace;
+}
+
+/* Solid dark-brown text with the game's offset shadow (no gradient) */
+.song-text,
+.artist-text,
+.status {
+    background: none;
+    -webkit-text-fill-color: #331f28;
+    color: #331f28;
+    animation: none;
+    filter: none;
+}
+
+.song-text {
+    font-family: 'StardewValleyBold', 'StardewValley', monospace;
+    font-weight: bold;
+    text-shadow: #ce9c5f -2px 1px;
+}
+
+.artist-text {
+    text-shadow: #ce9c5f -1px 1px;
+}
+
+.status {
+    opacity: 1;
+    font-size: {{ 12 if is_compact else 16 }}px;
+    margin-bottom: {{ 0 if is_compact else 2 }}px;
+    text-shadow: #ce9c5f -1px 1px;
+}
+
+{% if is_compact %}
+/* Compact: 56px of height for status + song + artist + bars */
+.song, .artist, .status {
+    line-height: 1.05;
+}
+{% endif %}
+
+/* Album art sits in a thin wooden inset, like an item slot */
+.cover {
+    border-radius: 0;
+    image-rendering: pixelated;
+    box-shadow: 0 0 0 2px #b14e05, 2px 2px 0 2px rgba(133, 54, 5, 0.6);
+}
+
+.art:hover .cover {
+    box-shadow: 0 0 0 2px #b14e05, 2px 2px 0 2px rgba(133, 54, 5, 0.6);
+}
+
+{% endblock %}
