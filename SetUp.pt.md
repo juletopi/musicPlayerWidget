@@ -282,7 +282,7 @@ Temas disponíveis:
 - `dark`: fundo e borda customizáveis
 - `stardew`: caixa de diálogo em pixel art com fonte pixel embutida. Visual fixo: ignora `background_color`, `border_color` e `background_type`
 
-Temas que usam fontes ou imagens (como o `stardew`) guardam os arquivos em `api/assets/` e os registram em `THEME_ASSETS` (`api/theme_assets.py`): o SVG é exibido via `<img>`, então todo asset vai embutido em base64. Mudanças de layout (borda mais grossa, fontes maiores) ficam em `THEME_LAYOUT_OVERRIDES` (`api/config.py`), para as barras do equalizador continuarem alinhadas.
+Temas que usam fontes ou imagens (como o `stardew`) guardam os arquivos em `api/assets/` e os registram em `THEME_ASSETS` (`api/theme_assets.py`): o SVG é exibido via `<img>`, então todo asset vai embutido em base64. Mudanças de layout (borda mais grossa, fontes maiores) ficam em `THEME_LAYOUTS` (`api/config.py`), para as barras do equalizador continuarem alinhadas.
 
 ### Criar tema customizado
 

@@ -266,7 +266,7 @@ Available themes:
 - `dark` - Customizable background and border colors
 - `stardew` - Pixel-art dialogue box with an embedded pixel font. Fixed look: ignores `background_color`, `border_color` and `background_type`
 
-Themes that need fonts or images (like `stardew`) keep them in `api/assets/` and register them in `THEME_ASSETS` (`api/theme_assets.py`): the SVG is shown through `<img>`, so every asset is embedded as base64. Layout changes (thicker border, bigger fonts) go in `THEME_LAYOUT_OVERRIDES` (`api/config.py`), so the equalizer bars stay aligned.
+Themes that need fonts or images (like `stardew`) keep them in `api/assets/` and register them in `THEME_ASSETS` (`api/theme_assets.py`): the SVG is shown through `<img>`, so every asset is embedded as base64. Layout changes (thicker border, bigger fonts) go in `THEME_LAYOUTS` (`api/config.py`), so the equalizer bars stay aligned.
 
 ### Creating Custom Themes
 
