@@ -55,6 +55,8 @@
 
 [![Status On](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)](https://music-player-widget-ten.vercel.app/api/spotify/?show_status=true&background_color=0e1118&border_color=22252c)
 
+<br>
+
 ### Extras
 
 **Stardew**
